@@ -316,5 +316,8 @@ module_param_cb(ksu_debug_manager_uid, &expected_size_ops,
 
 bool is_manager_apk(char *path)
 {
-	return check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH);
+	// https://github.com/backslashxx/KernelSU/commit/038375aff1d383f0911c324cecc65f7510b17124
+	return (check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH)
+	|| check_v2_signature(path, EXPECTED_SIZE_CUST, EXPECTED_HASH_CUST)
+	);
 }
