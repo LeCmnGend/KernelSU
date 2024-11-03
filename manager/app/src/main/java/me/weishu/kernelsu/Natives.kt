@@ -42,9 +42,6 @@ object Natives {
     val isSafeMode: Boolean
         external get
 
-    val isLkmMode: Boolean
-        external get
-
     external fun uidShouldUmount(uid: Int): Boolean
 
     /**
