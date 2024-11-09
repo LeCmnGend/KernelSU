@@ -54,6 +54,8 @@
     <string name="home_rsu_unofficial_content">This manager has been modified to work with non-GKI kernels. You can check the source by clicking this card.</string>
     <string name="home_support_title">Support Us</string>
     <string name="home_support_content">KernelSU is, and always will be, free, and open source. You can however show us that you care by making a donation.</string>
+    <string name="home_unofficial_card_title">Unofficial Manager Announcement</string>
+    <string name="home_unofficial_card_content">This KernelSU has been modified by Rissu. Credits to tiann for original Manager, you can check unofficial source by clicking this card.</string>
     <string name="about_source_code"><![CDATA[View source code at %1$s<br/>Join our %2$s channel]]></string>
     <string name="profile" translatable="false">App Profile</string>
     <string name="profile_default">Default</string>

@@ -48,14 +48,9 @@ bool become_manager(const char* pkg) {
 }
 
 // cache the result to avoid unnecessary syscall
-static bool is_lkm;
 int get_version() {
     int32_t version = -1;
-    int32_t lkm = 0;
-    ksuctl(CMD_GET_VERSION, &version, &lkm);
-    if (!is_lkm && lkm != 0) {
-        is_lkm = true;
-    }
+    ksuctl(CMD_GET_VERSION, &version, nullptr);
     return version;
 }
 
@@ -65,11 +60,6 @@ bool get_allow_list(int *uids, int *size) {
 
 bool is_safe_mode() {
     return ksuctl(CMD_CHECK_SAFEMODE, nullptr, nullptr);
-}
-
-bool is_lkm_mode() {
-    // you should call get_version first!
-    return is_lkm;
 }
 
 bool uid_should_umount(int uid) {

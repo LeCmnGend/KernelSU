@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.pm.PackageInfoCompat
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.InstallScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.Dispatchers
@@ -56,9 +55,6 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                 onSettingsClick = {
                     navigator.navigate(SettingScreenDestination)
                 },
-                onInstallClick = {
-                    navigator.navigate(InstallScreenDestination)
-                },
                 scrollBehavior = scrollBehavior
             )
         },
@@ -73,17 +69,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             val isManager = Natives.becomeManager(ksuApp.packageName)
-            SideEffect {
-                if (isManager) install()
-            }
             val ksuVersion = if (isManager) Natives.version else null
-            val lkmMode = ksuVersion?.let {
-                if (it >= Natives.MINIMAL_SUPPORTED_KERNEL_LKM && kernelVersion.isGKI()) Natives.isLkmMode else null
-            }
-
-            StatusCard(kernelVersion, ksuVersion, lkmMode) {
-                navigator.navigate(InstallScreenDestination)
-            }
             if (isManager && Natives.requireNewKernel()) {
                 WarningCard(
                     stringResource(id = R.string.require_kernel_version).format(
@@ -167,22 +153,12 @@ fun RebootDropdownItem(@StringRes id: Int, reason: String = "") {
 @Composable
 private fun TopBar(
     kernelVersion: KernelVersion,
-    onInstallClick: () -> Unit,
     onSettingsClick: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior? = null
 ) {
     TopAppBar(
         title = { Text(stringResource(R.string.app_name)) },
         actions = {
-            if (kernelVersion.isGKI()) {
-                IconButton(onClick = onInstallClick) {
-                    Icon(
-                        imageVector = Icons.Filled.Archive,
-                        contentDescription = stringResource(id = R.string.install)
-                    )
-                }
-            }
-
             var showDropdown by remember { mutableStateOf(false) }
             IconButton(onClick = {
                 showDropdown = true
@@ -223,12 +199,7 @@ private fun TopBar(
 }
 
 @Composable
-private fun StatusCard(
-    kernelVersion: KernelVersion,
-    ksuVersion: Int?,
-    lkmMode: Boolean?,
-    onClickInstall: () -> Unit = {}
-) {
+private fun StatusCard(kernelVersion: KernelVersion, ksuVersion: Int?) {
     ElevatedCard(
         colors = CardDefaults.elevatedCardColors(containerColor = run {
             if (ksuVersion != null) MaterialTheme.colorScheme.secondaryContainer
@@ -237,11 +208,6 @@ private fun StatusCard(
     ) {
         Row(modifier = Modifier
             .fillMaxWidth()
-            .clickable {
-                if (kernelVersion.isGKI()) {
-                    onClickInstall()
-                }
-            }
             .padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
             when {
                 ksuVersion != null -> {
@@ -250,14 +216,8 @@ private fun StatusCard(
                         else -> ""
                     }
 
-                    val workingMode = when (lkmMode) {
-                        null -> ""
-                        true -> " <LKM>"
-                        else -> " <GKI>"
-                    }
-
                     val workingText =
-                        "${stringResource(id = R.string.home_working)}$workingMode$safeMode"
+                        "${stringResource(id = R.string.home_working)}$safeMode"
 
                     Icon(Icons.Outlined.CheckCircle, stringResource(R.string.home_working))
                     Column(Modifier.padding(start = 20.dp)) {
@@ -279,21 +239,6 @@ private fun StatusCard(
                         Spacer(Modifier.height(4.dp))
                         Text(
                             text = stringResource(R.string.home_module_count, getModuleCount()),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-
-                kernelVersion.isGKI() -> {
-                    Icon(Icons.Outlined.Warning, stringResource(R.string.home_not_installed))
-                    Column(Modifier.padding(start = 20.dp)) {
-                        Text(
-                            text = stringResource(R.string.home_not_installed),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.home_click_to_install),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -371,7 +316,9 @@ fun LearnMoreCard() {
 @Composable
 fun UnofficialCard() {
     val uriHandler = LocalUriHandler.current
+
     ElevatedCard {
+
         Row(modifier = Modifier
             .fillMaxWidth()
             .clickable {
@@ -380,12 +327,12 @@ fun UnofficialCard() {
             .padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
             Column {
                 Text(
-                    text = stringResource(R.string.home_rsu_unofficial_title),
+                    text = stringResource(R.string.home_unofficial_card_title),
                     style = MaterialTheme.typography.titleSmall
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = stringResource(R.string.home_rsu_unofficial_content),
+                    text = stringResource(R.string.home_unofficial_card_content),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -436,7 +383,7 @@ private fun InfoCard() {
             @Composable
             fun InfoCardItem(label: String, content: String) {
                 contents.appendLine(label).appendLine(content).appendLine()
-                Text(text = label, style = MaterialTheme.typography.bodyLarge)
+                Text(text = label, style = MaterialTheme.typography.titleMedium)
                 Text(text = content, style = MaterialTheme.typography.bodyMedium)
             }
 
@@ -468,10 +415,10 @@ fun getManagerVersion(context: Context): Pair<String, Long> {
 @Composable
 private fun StatusCardPreview() {
     Column {
-        StatusCard(KernelVersion(5, 10, 101), 1, null)
-        StatusCard(KernelVersion(5, 10, 101), 20000, true)
-        StatusCard(KernelVersion(5, 10, 101), null, true)
-        StatusCard(KernelVersion(4, 10, 101), null, false)
+        StatusCard(KernelVersion(5, 10, 101), 1)
+        StatusCard(KernelVersion(5, 10, 101), 20000)
+        StatusCard(KernelVersion(5, 10, 101), null)
+        StatusCard(KernelVersion(4, 10, 101), null)
     }
 }
 

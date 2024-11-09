@@ -9,7 +9,8 @@ use std::{
     process::Command,
 };
 
-use crate::{assets, boot_patch, defs, ksucalls, module, restorecon};
+use crate::{assets, defs, ksucalls, module, restorecon};
+use std::fs::metadata;
 #[allow(unused_imports)]
 use std::fs::{set_permissions, Permissions};
 #[cfg(unix)]
@@ -187,56 +188,66 @@ pub fn has_magisk() -> bool {
     which::which("magisk").is_ok()
 }
 
-#[cfg(target_os = "android")]
-fn link_ksud_to_bin() -> Result<()> {
-    let ksu_bin = PathBuf::from(defs::DAEMON_PATH);
-    let ksu_bin_link = PathBuf::from(defs::DAEMON_LINK_PATH);
-    if ksu_bin.exists() && !ksu_bin_link.exists() {
-        std::os::unix::fs::symlink(&ksu_bin, &ksu_bin_link)?;
+fn is_ok_empty(dir: &str) -> bool {
+    use std::result::Result::Ok;
+
+    match fs::read_dir(dir) {
+        Ok(mut entries) => entries.next().is_none(),
+        Err(_) => false,
     }
-    Ok(())
 }
 
-pub fn install(magiskboot: Option<PathBuf>) -> Result<()> {
-    ensure_dir_exists(defs::ADB_DIR)?;
-    std::fs::copy("/proc/self/exe", defs::DAEMON_PATH)?;
-    restorecon::lsetfilecon(defs::DAEMON_PATH, restorecon::ADB_CON)?;
-    // install binary assets
-    assets::ensure_binaries(false).with_context(|| "Failed to extract assets")?;
+fn find_temp_path() -> String {
+    use std::result::Result::Ok;
 
-    #[cfg(target_os = "android")]
-    link_ksud_to_bin()?;
-
-    if let Some(magiskboot) = magiskboot {
-        ensure_dir_exists(defs::BINARY_DIR)?;
-        let _ = std::fs::copy(magiskboot, defs::MAGISKBOOT_PATH);
+    if is_ok_empty(defs::TEMP_DIR) {
+        return defs::TEMP_DIR.to_string();
     }
 
-    Ok(())
+    // Try to create a random directory in /dev/
+    let r = tempfile::tempdir_in("/dev/");
+    match r {
+        Ok(tmp_dir) => {
+            if let Some(path) = tmp_dir.into_path().to_str() {
+                return path.to_string();
+            }
+        }
+        Err(_e) => {}
+    }
+
+    let dirs = [
+        defs::TEMP_DIR,
+        "/patch_hw",
+        "/oem",
+        "/root",
+        defs::TEMP_DIR_LEGACY,
+    ];
+
+    // find empty directory
+    for dir in dirs {
+        if is_ok_empty(dir) {
+            return dir.to_string();
+        }
+    }
+
+    // Fallback to non-empty directory
+    for dir in dirs {
+        if metadata(dir).is_ok() {
+            return dir.to_string();
+        }
+    }
+
+    "".to_string()
 }
 
-pub fn uninstall(magiskboot_path: Option<PathBuf>) -> Result<()> {
-    if Path::new(defs::MODULE_DIR).exists() {
-        println!("- Uninstall modules..");
-        module::uninstall_all_modules()?;
-        module::prune_modules()?;
-    }
-    println!("- Removing directories..");
-    std::fs::remove_dir_all(defs::WORKING_DIR).ok();
-    std::fs::remove_file(defs::DAEMON_PATH).ok();
-    crate::mount::umount_dir(defs::MODULE_DIR).ok();
-    std::fs::remove_dir_all(defs::MODULE_DIR).ok();
-    std::fs::remove_dir_all(defs::MODULE_UPDATE_TMP_DIR).ok();
-    println!("- Restore boot image..");
-    boot_patch::restore(None, magiskboot_path, true)?;
-    println!("- Uninstall KernelSU manager..");
-    Command::new("pm")
-        .args(["uninstall", "me.weishu.kernelsu"])
-        .spawn()?;
-    println!("- Rebooting in 5 seconds..");
-    std::thread::sleep(std::time::Duration::from_secs(5));
-    Command::new("reboot").spawn()?;
-    Ok(())
+pub fn get_tmp_path() -> &'static str {
+    static CHOSEN_TMP_PATH: OnceLock<String> = OnceLock::new();
+
+    CHOSEN_TMP_PATH.get_or_init(|| {
+        let r = find_temp_path();
+        log::info!("Chosen temp_path: {}", r);
+        r
+    })
 }
 
 // TODO: use libxcp to improve the speed if cross's MSRV is 1.70
