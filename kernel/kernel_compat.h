@@ -17,7 +17,7 @@ extern long ksu_strncpy_from_user_retry(char *dst,
 extern struct key *init_session_keyring;
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) || defined(CONFIG_KSU_ALLOWLIST_WORKAROUND)
 extern struct key *init_session_keyring;
 #endif
 
