@@ -74,7 +74,7 @@ impl Node {
 
             if let Some(node) = node {
                 has_file |= if let Directory = node.file_type {
-                    node.collect_module_files(&dir.join(&node.name))?
+                    node.collect_module_files(dir.join(&node.name))?
                 } else {
                     true
                 }
@@ -137,7 +137,7 @@ fn collect_module_files() -> Result<Option<Node>> {
     }
 
     if has_file {
-        for partition in vec!["vendor", "system_ext", "product", "odm"] {
+        for partition in ["vendor", "system_ext", "product", "odm"] {
             let path_of_root = Path::new("/").join(partition);
             let path_of_system = Path::new("/system").join(partition);
             if path_of_root.is_dir() && path_of_system.is_symlink() {
@@ -290,7 +290,7 @@ fn do_magic_mount<P: AsRef<Path>, WP: AsRef<Path>>(
                         Some(Gid::from_raw(metadata.gid())),
                     )?;
                 }
-                lsetfilecon(&work_dir_path, lgetfilecon(&path)?.as_str())?;
+                lsetfilecon(&work_dir_path, lgetfilecon(path)?.as_str())?;
             }
 
             if create_tmpfs {
