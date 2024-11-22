@@ -1,5 +1,7 @@
-use crate::defs::{KSU_MOUNT_SOURCE, MODULE_DIR, SKIP_MOUNT_FILE_NAME, TEMP_DIR};
-use crate::magic_mount::NodeFileType::{Directory, RegularFile, Symlink};
+use crate::defs::{
+    DISABLE_FILE_NAME, KSU_MOUNT_SOURCE, MODULE_DIR, SKIP_MOUNT_FILE_NAME, TEMP_DIR,
+};
+use crate::magic_mount::NodeFileType::{Directory, RegularFile, Symlink, Whiteout};
 use crate::restorecon::{lgetfilecon, lsetfilecon};
 use anyhow::{bail, Context, Result};
 use extattr::lgetxattr;
@@ -48,6 +50,7 @@ struct Node {
     // the module that owned this node
     module_path: Option<PathBuf>,
     replace: bool,
+    skip: bool,
 }
 
 impl Node {
@@ -83,6 +86,7 @@ impl Node {
             children: Default::default(),
             module_path: None,
             replace: false,
+            skip: false,
         }
     }
 
@@ -109,6 +113,7 @@ impl Node {
                     children: Default::default(),
                     module_path: Some(path),
                     replace,
+                    skip: false,
                 });
             }
         }
@@ -133,7 +138,8 @@ fn collect_module_files() -> Result<Option<Node>> {
             continue;
         }
 
-        if entry.path().join("disable").exists() || entry.path().join(SKIP_MOUNT_FILE_NAME).exists()
+        if entry.path().join(DISABLE_FILE_NAME).exists()
+            || entry.path().join(SKIP_MOUNT_FILE_NAME).exists()
         {
             continue;
         }
@@ -262,9 +268,10 @@ fn do_magic_mount<P: AsRef<Path>, WP: AsRef<Path>>(
             }
         }
         Directory => {
-            let mut create_tmpfs = current.replace;
+            let mut create_tmpfs = !has_tmpfs && current.replace && current.module_path.is_some();
             if !has_tmpfs && !create_tmpfs {
-                for (name, node) in &current.children {
+                for it in &mut current.children {
+                    let (name, node) = it;
                     let real_path = path.join(name);
                     let need = if node.file_type == Symlink || !real_path.exists() {
                         true
@@ -275,6 +282,14 @@ fn do_magic_mount<P: AsRef<Path>, WP: AsRef<Path>>(
                         file_type != node.file_type || file_type == Symlink
                     };
                     if need {
+                        if current.module_path.is_none() {
+                            log::error!(
+                                "cannot create tmpfs on {}, ignore: {name}",
+                                path.display()
+                            );
+                            node.skip = true;
+                            continue;
+                        }
                         create_tmpfs = true;
                         break;
                     }
@@ -321,6 +336,9 @@ fn do_magic_mount<P: AsRef<Path>, WP: AsRef<Path>>(
                 for entry in path.read_dir()?.flatten() {
                     let name = entry.file_name().to_string_lossy().to_string();
                     let result = if let Some(node) = current.children.remove(&name) {
+                        if node.skip {
+                            continue;
+                        }
                         do_magic_mount(&path, &work_dir_path, node, has_tmpfs)
                             .with_context(|| format!("magic mount {}/{name}", path.display()))
                     } else if has_tmpfs {
@@ -352,6 +370,9 @@ fn do_magic_mount<P: AsRef<Path>, WP: AsRef<Path>>(
             }
 
             for (name, node) in current.children.into_iter() {
+                if node.skip {
+                    continue;
+                }
                 if let Err(e) = do_magic_mount(&path, &work_dir_path, node, has_tmpfs)
                     .with_context(|| format!("magic mount {}/{name}", path.display()))
                 {
