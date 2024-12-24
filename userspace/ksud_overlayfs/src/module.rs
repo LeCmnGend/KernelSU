@@ -58,6 +58,7 @@ fn exec_install_script(module_file: &str) -> Result<()> {
         .env("KSU_KERNEL_VER_CODE", ksucalls::get_version().to_string())
         .env("KSU_VER", defs::VERSION_NAME)
         .env("KSU_VER_CODE", defs::VERSION_CODE)
+        .env("KSU_MAGIC_MOUNT", "true")
         .env("OUTFD", "1")
         .env("ZIPFILE", realpath)
         .env("KSU_OVERLAYFS", "true")
@@ -176,6 +177,7 @@ fn exec_script<T: AsRef<Path>>(path: T, wait: bool) -> Result<()> {
         .env("KSU_VER_CODE", defs::VERSION_CODE)
         .env("KSU_VER", defs::VERSION_NAME)
         .env("KSU_OVERLAYFS", "true")
+        .env("KSU_MAGIC_MOUNT", "true")
         .env(
             "PATH",
             format!(
