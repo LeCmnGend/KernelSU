@@ -450,6 +450,10 @@ pub fn restore_module(id: &str) -> Result<()> {
     })
 }
 
+pub fn restore_uninstall_module(id: &str) -> Result<()> {
+    mark_module_state(id, defs::REMOVE_FILE_NAME, false)
+}
+
 pub fn run_action(id: &str) -> Result<()> {
     let action_script_path = format!("/data/adb/modules/{id}/action.sh");
     exec_script(&action_script_path, true)
