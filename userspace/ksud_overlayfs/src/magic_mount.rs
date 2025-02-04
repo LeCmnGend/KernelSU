@@ -286,13 +286,19 @@ fn do_magic_mount<P: AsRef<Path>, WP: AsRef<Path>>(
                 for it in &mut current.children {
                     let (name, node) = it;
                     let real_path = path.join(name);
-                    let need = if node.file_type == Symlink || !real_path.exists() {
-                        true
-                    } else {
-                        let file_type = real_path.metadata()?.file_type();
-                        let file_type =
-                            NodeFileType::from_file_type(file_type).unwrap_or(RegularFile);
-                        file_type != node.file_type || file_type == Symlink
+                    let need = match node.file_type {
+                        Symlink => true,
+                        Whiteout => real_path.exists(),
+                        _ => {
+                            if let Ok(metadata) = real_path.symlink_metadata() {
+                                let file_type = NodeFileType::from_file_type(metadata.file_type())
+                                    .unwrap_or(Whiteout);
+                                file_type != node.file_type || file_type == Symlink
+                            } else {
+                                // real path not exists
+                                true
+                            }
+                        }
                     };
                     if need {
                         if current.module_path.is_none() {
