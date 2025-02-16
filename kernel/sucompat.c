@@ -23,11 +23,9 @@
 #define SU_PATH "/system/bin/su"
 #define SH_PATH "/system/bin/sh"
 
-#ifndef CONFIG_KSU_KPROBES_HOOK
-static bool ksu_sucompat_non_kp __read_mostly = true;
-#endif
+extern void ksu_escape_to_root(void);
 
-extern void ksu_escape_to_root();
+static bool ksu_sucompat_non_kp __read_mostly = true;
 
 static void __user *userspace_stack_buffer(const void *d, size_t len)
 {
@@ -57,12 +55,9 @@ int ksu_handle_faccessat(int *dfd, const char __user **filename_user, int *mode,
 {
 	const char su[] = SU_PATH;
 
-#ifndef CONFIG_KSU_KPROBES_HOOK
-	if (!ksu_sucompat_non_kp) {
+	if (unlikely(!ksu_sucompat_non_kp))
 		return 0;
-	}
-#endif
-
+	
 	if (!ksu_is_allow_uid(current_uid().val)) {
 		return 0;
 	}
@@ -84,11 +79,8 @@ int ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags)
 	// const char sh[] = SH_PATH;
 	const char su[] = SU_PATH;
 
-#ifndef CONFIG_KSU_KPROBES_HOOK
-	if (!ksu_sucompat_non_kp){
+	if (unlikely(!ksu_sucompat_non_kp))
 		return 0;
-	}
-#endif
 
 	if (!ksu_is_allow_uid(current_uid().val)) {
 		return 0;
@@ -119,12 +111,9 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 	const char sh[] = KSUD_PATH;
 	const char su[] = SU_PATH;
 
-#ifndef CONFIG_KSU_KPROBES_HOOK
-	if (!ksu_sucompat_non_kp) {
+	if (unlikely(!ksu_sucompat_non_kp))
 		return 0;
-	}
-#endif
-
+	
 	if (unlikely(!filename_ptr))
 		return 0;
 
@@ -154,12 +143,9 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 	const char su[] = SU_PATH;
 	char path[sizeof(su) + 1];
 
-#ifndef CONFIG_KSU_KPROBES_HOOK
-	if (!ksu_sucompat_non_kp) {
+	if (unlikely(!ksu_sucompat_non_kp))
 		return 0;
-	}
-#endif
-
+	
 	if (unlikely(!filename_user))
 		return 0;
 
@@ -182,11 +168,8 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 
 int ksu_handle_devpts(struct inode *inode)
 {
-#ifndef CONFIG_KSU_KPROBES_HOOK
-	if (!ksu_sucompat_non_kp) {
+	if (unlikely(!ksu_sucompat_non_kp))
 		return 0;
-	}
-#endif
 
 	if (!current->mm) {
 		return 0;
@@ -219,10 +202,14 @@ int ksu_handle_devpts(struct inode *inode)
 // sucompat: permited process can execute 'su' to gain root access.
 void ksu_sucompat_init()
 {
+	ksu_sucompat_non_kp = true;
+	pr_info("ksu_sucompat_init: hooks enabled: execve/execveat_su, faccessat, stat, devpts\n");
 }
 
 void ksu_sucompat_exit()
 {
+	ksu_sucompat_non_kp = false;
+	pr_info("ksu_sucompat_exit: hooks disabled: execve/execveat_su, faccessat, stat, devpts\n");
 }
 
 
