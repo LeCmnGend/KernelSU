@@ -6,7 +6,11 @@
 #include <linux/init_task.h>
 #include <linux/kernel.h>
 #include <linux/binfmts.h>
+
+#ifdef CONFIG_KSU_LSM_SECURITY_HOOKS
 #include <linux/lsm_hooks.h>
+#endif
+
 #include <linux/nsproxy.h>
 #include <linux/path.h>
 #include <linux/printk.h>
@@ -105,6 +109,12 @@ static inline void susfs_on_post_fs_data(void) {
 #endif // #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
 }
 #endif // #ifdef CONFIG_KSU_SUSFS
+
+#ifdef CONFIG_KSU_LSM_SECURITY_HOOKS
+#define LSM_HANDLER_TYPE static int
+#else
+#define LSM_HANDLER_TYPE int
+#endif
 
 static bool ksu_module_mounted = false;
 static unsigned int ksu_unmountable_count = 0;
@@ -255,7 +265,7 @@ void ksu_escape_to_root(void)
 	ksu_setup_selinux(profile->selinux_domain);
 }
 
-int ksu_handle_rename(struct dentry *old_dentry, struct dentry *new_dentry)
+LSM_HANDLER_TYPE ksu_handle_rename(struct dentry *old_dentry, struct dentry *new_dentry)
 {
 	if (!current->mm) {
 		// skip kernel threads
@@ -318,7 +328,7 @@ static void nuke_ext4_sysfs() {
 static void nuke_ext4_sysfs() { }
 #endif
 
-int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
+LSM_HANDLER_TYPE ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		     unsigned long arg4, unsigned long arg5)
 {
 	// if success, we modify the arg5 as result!
@@ -1019,7 +1029,7 @@ struct mount_entry {
 };
 LIST_HEAD(mount_list);
 
-int ksu_handle_setuid(struct cred *new, const struct cred *old)
+LSM_HANDLER_TYPE ksu_handle_setuid(struct cred *new, const struct cred *old)
 {
 	struct mount_entry *entry, *tmp;
 
@@ -1120,7 +1130,7 @@ out_ksu_try_umount:
 
 extern int __ksu_handle_devpts(struct inode *inode); // sucompat.c
 
-static int ksu_inode_permission(struct inode *inode, int mask)
+LSM_HANDLER_TYPE  ksu_inode_permission(struct inode *inode, int mask)
 {
 	if (unlikely(inode->i_sb && inode->i_sb->s_magic == DEVPTS_SUPER_MAGIC)) {
 #ifdef CONFIG_KSU_DEBUG
@@ -1188,7 +1198,7 @@ out:
 }
 
 // for UL, hook on security.c ksu_sb_mount(dev_name, path, type, flags, data);
-int ksu_sb_mount(const char *dev_name, const struct path *path,
+LSM_HANDLER_TYPE ksu_sb_mount(const char *dev_name, const struct path *path,
                         const char *type, unsigned long flags, void *data)
 {
 	/* 
@@ -1214,7 +1224,7 @@ int ksu_sb_mount(const char *dev_name, const struct path *path,
 bool ksu_is_compat __read_mostly = false;
 #endif
 
-int ksu_bprm_check(struct linux_binprm *bprm)
+LSM_HANDLER_TYPE ksu_bprm_check(struct linux_binprm *bprm)
 {
 	char *filename = (char *)bprm->filename;
 	
@@ -1250,16 +1260,9 @@ int ksu_bprm_check(struct linux_binprm *bprm)
 
 }
 
-static int ksu_task_prctl(int option, unsigned long arg2, unsigned long arg3,
-			  unsigned long arg4, unsigned long arg5)
-{
-	ksu_handle_prctl(option, arg2, arg3, arg4, arg5);
-	return -ENOSYS;
-}
-
-// kernel 4.4 and 4.9
+// kernel 4.9 and older
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) || defined(CONFIG_KSU_ALLOWLIST_WORKAROUND)
-static int ksu_key_permission(key_ref_t key_ref, const struct cred *cred,
+LSM_HANDLER_TYPE ksu_key_permission(key_ref_t key_ref, const struct cred *cred,
 			      unsigned perm)
 {
 	if (init_session_keyring != NULL) {
@@ -1274,6 +1277,15 @@ static int ksu_key_permission(key_ref_t key_ref, const struct cred *cred,
 	return 0;
 }
 #endif
+
+#ifdef CONFIG_KSU_LSM_SECURITY_HOOKS
+static int ksu_task_prctl(int option, unsigned long arg2, unsigned long arg3,
+			  unsigned long arg4, unsigned long arg5)
+{
+	ksu_handle_prctl(option, arg2, arg3, arg4, arg5);
+	return -ENOSYS;
+}
+
 static int ksu_inode_rename(struct inode *old_inode, struct dentry *old_dentry,
 			    struct inode *new_inode, struct dentry *new_dentry)
 {
@@ -1312,3 +1324,9 @@ void __init ksu_core_init(void)
 {
 	ksu_lsm_hook_init();
 }
+#else
+void __init ksu_core_init(void)
+{
+	pr_info("ksu_core_init: LSM hooks not in use.\n");
+}
+#endif //CONFIG_KSU_LSM_SECURITY_HOOKS
