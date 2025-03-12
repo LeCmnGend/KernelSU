@@ -47,8 +47,16 @@ ifeq ($(shell grep -q " current_sid(void)" $(srctree)/security/selinux/include/o
 ccflags-y += -DKSU_COMPAT_HAS_CURRENT_SID
 endif
 
+ifeq ($(shell grep -q " current_sid(void)" $(srctree)/security/selinux/include/objsec.h; echo $$?),0)
+ccflags-y += -DKSU_COMPAT_HAS_CURRENT_SID
+endif
+
 ifeq ($(shell grep -q "struct selinux_state " $(srctree)/security/selinux/include/security.h; echo $$?),0)
 ccflags-y += -DKSU_COMPAT_HAS_SELINUX_STATE
+endif
+
+ifndef KSU_EXPECTED_SIZE
+KSU_EXPECTED_SIZE := 0x033b
 endif
 
 ifeq ($(shell grep -q "strncpy_from_user_nofault" $(srctree)/include/linux/uaccess.h; echo $$?),0)
@@ -125,6 +133,13 @@ endif
 ifneq ($(shell grep -Eq "^int path_umount" $(srctree)/fs/internal.h; echo $$?),0)
 $(shell sed -i '/^extern void __init mnt_init/a int path_umount(struct path *path, int flags);' $(srctree)/fs/internal.h;)
 $(info -- KSU_NEXT: adding 'int path_umount(struct path *path, int flags);' to $(srctree)/fs/internal.h)
+endif
+
+ifeq ($(shell grep -q "int path_umount" $(srctree)/fs/namespace.c; echo $$?),0)
+ccflags-y += -DKSU_UMOUNT
+else
+$(info -- Did you know you can backport path_umount to fs/namespace.c from 5.9?)
+$(info -- Read: https://kernelsu.org/guide/how-to-integrate-for-non-gki.html#how-to-backport-path-umount)
 endif
 
 ccflags-y += -Wno-implicit-function-declaration -Wno-strict-prototypes -Wno-int-conversion -Wno-gcc-compat
