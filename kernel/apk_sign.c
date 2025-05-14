@@ -189,6 +189,22 @@ static __always_inline bool check_v2_signature(char *path,
 	bool v3_1_signing_exist = false;
 
 	int i;
+	struct path kpath;
+	if (kern_path(path, 0, &kpath))
+		return false;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 5, 0) 
+	if (inode_is_locked(kpath.dentry->d_inode)) {
+#else
+	if (mutex_is_locked(&kpath.dentry->d_inode->i_mutex)) {	
+#endif
+		pr_info("%s: inode is locked for %s\n", __func__, path);
+		path_put(&kpath);
+		return false;
+	}
+
+	path_put(&kpath);
+
 	struct file *fp = ksu_filp_open_compat(path, O_RDONLY, 0);
 	if (IS_ERR(fp)) {
 		pr_err("open %s error.\n", path);
@@ -387,7 +403,9 @@ bool ksu_is_manager_apk(char *path)
 
 #ifdef CONFIG_KSU_SUSFS
 	return (check_v2_signature(path, EXPECTED_MANAGER_SIZE, EXPECTED_MANAGER_HASH)
+		|| check_v2_signature(path, 0x363, "4359c171f32543394cbc23ef908c4bb94cad7c8087002ba164c8230948c21549") // dummy.keystore
 		|| check_v2_signature(path, 384, "7e0c6d7278a3bb8e364e0fcba95afaf3666cf5ff3c245a3b63c8833bd0445cc4") // 5ec1cff
+	/*	|| check_v2_signature(path, custom_size, custom_hash)  // add more as you like 	*/
 	);
 #else
 	return check_v2_signature(path, expected_manager_size, expected_manager_hash);
