@@ -16,6 +16,9 @@
 #include <linux/mount.h>
 #include <linux/fs.h>
 #include <linux/namei.h>
+#if !(LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)) && !defined(KSU_HAS_PATH_UMOUNT) 
+#include <linux/syscalls.h> // sys_umount
+#endif
 
 #ifdef CONFIG_KSU_SUSFS
 #include <linux/susfs.h>
@@ -957,15 +960,28 @@ static bool should_umount(struct path *path)
 #endif
 }
 
-static int ksu_umount_mnt(struct path *path, int flags)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) || defined(KSU_HAS_PATH_UMOUNT)
+static void ksu_path_umount(const char *mnt, struct path *path, int flags)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) || defined(KSU_UMOUNT)
-	return path_umount(path, flags);
-#else
-	// TODO: umount for non GKI kernel
-	return -ENOSYS;
-#endif
+	int err = path_umount(path, flags);
+	pr_info("%s: path: %s code: %d\n", __func__, mnt, err);
 }
+#else
+static void ksu_sys_umount(const char *mnt, int flags)
+{
+	char __user *usermnt = (char __user *)mnt;
+
+	mm_segment_t old_fs = get_fs();
+	set_fs(KERNEL_DS);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 17, 0)
+	int ret = ksys_umount(usermnt, flags);
+#else
+	long ret = sys_umount(usermnt, flags); // cuz asmlinkage long sys##name
+#endif
+	set_fs(old_fs);
+	pr_info("%s: path: %s code: %d \n", __func__, mnt, ret);
+}
+#endif // KSU_HAS_PATH_UMOUNT
 
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 void ksu_try_umount(const char *mnt, bool check_mnt, int flags, uid_t uid)
@@ -997,10 +1013,16 @@ static void ksu_try_umount(const char *mnt, bool check_mnt, int flags)
 	}
 #endif
 
-	err = ksu_umount_mnt(&path, flags);
-	if (err) {
-		pr_warn("umount %s failed: %d\n", mnt, err);
-	}
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) || defined(KSU_HAS_PATH_UMOUNT)
+	ksu_path_umount(mnt, &path, flags);
+	// dont call path_put here!!
+	// path_umount releases ref for us
+#else
+	ksu_sys_umount(mnt, flags);
+	// release ref here! user_path_at increases it
+	// then only cleans for itself
+	path_put(&path);
+#endif
 }
 
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
