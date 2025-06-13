@@ -1,8 +1,7 @@
 menu "KernelSU"
 
 config KSU
-	tristate "KernelSU function support"
-	depends on OVERLAY_FS
+	bool "KernelSU function support"
 	default y
 	help
 	  Enable kernel-level root privileges on Android System.
@@ -13,7 +12,7 @@ config KSU_KPROBES_HOOK
 	bool "Use kprobes for kernelsu"
 	depends on KSU
 	depends on KPROBES
-	default y
+	default n
 	help
 	  Disable if you use manual hooks.
 
