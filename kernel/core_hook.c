@@ -5,6 +5,7 @@
 #include <linux/init.h>
 #include <linux/init_task.h>
 #include <linux/kernel.h>
+#include <linux/binfmts.h>
 #include <linux/lsm_hooks.h>
 #include <linux/nsproxy.h>
 #include <linux/path.h>
@@ -1210,6 +1211,19 @@ int ksu_sb_mount(const char *dev_name, const struct path *path,
 	}
 }
 
+int ksu_bprm_check(struct linux_binprm *bprm)
+{
+	char *filename = (char *)bprm->filename;
+	
+	if (likely(!ksu_execveat_hook))
+		return 0;
+
+	ksu_handle_pre_ksud(filename);
+
+	return 0;
+
+}
+
 static int ksu_task_prctl(int option, unsigned long arg2, unsigned long arg3,
 			  unsigned long arg4, unsigned long arg5)
 {
@@ -1247,6 +1261,7 @@ static int ksu_task_fix_setuid(struct cred *new, const struct cred *old,
 }
 
 static struct security_hook_list ksu_hooks[] = {
+	LSM_HOOK_INIT(bprm_check_security, ksu_bprm_check),
 	LSM_HOOK_INIT(task_prctl, ksu_task_prctl),
 	LSM_HOOK_INIT(inode_rename, ksu_inode_rename),
 	LSM_HOOK_INIT(task_fix_setuid, ksu_task_fix_setuid),
