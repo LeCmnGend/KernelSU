@@ -829,7 +829,7 @@ fun ModuleItem(
                                     LabelItem(
                                         text = stringResource(R.string.module_update),
                                         style = com.dergoogler.mmrl.ui.component.LabelItemDefaults.style.copy(
-                                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                            containerColor = MaterialTheme.colorScheme.onTertiary,
                                             contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                                         )
                                     )
@@ -1012,7 +1012,7 @@ fun ModuleItem(
 
                             Spacer(modifier = Modifier.weight(1f, true))
 
-                            if (updateUrl.isNotEmpty() && !module.remove && !module.update) {
+                            if (updateUrl.isNotEmpty()) {
                                 Button(
                                     modifier = Modifier.defaultMinSize(52.dp, 32.dp),
                                     enabled = !module.remove,
@@ -1089,7 +1089,6 @@ fun ModuleItem(
 }
 
 fun formatSize(size: Long): String {
-    if (size == 0L) return "null"
     val kb = 1024
     val mb = kb * 1024
     val gb = mb * 1024

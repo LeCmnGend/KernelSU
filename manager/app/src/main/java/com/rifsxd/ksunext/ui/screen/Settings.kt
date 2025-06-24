@@ -349,20 +349,18 @@ fun SettingScreen(navigator: DestinationsNavigator) {
             }
 
             val developer = stringResource(id = R.string.developer)
-            if (ksuVersion != null) {
-                ListItem(
-                    leadingContent = {
-                        Icon(
-                            Icons.Filled.DeveloperBoard,
-                            developer
-                        )
-                    },
-                    headlineContent = { Text(developer) },
-                    modifier = Modifier.clickable {
-                        navigator.navigate(DeveloperScreenDestination)
-                    }
-                )
-            }
+            ListItem(
+                leadingContent = {
+                    Icon(
+                        Icons.Filled.DeveloperBoard,
+                        developer
+                    )
+                },
+                headlineContent = { Text(developer) },
+                modifier = Modifier.clickable {
+                    navigator.navigate(DeveloperScreenDestination)
+                }
+            )
 
             val lkmMode = Natives.version >= Natives.MINIMAL_SUPPORTED_KERNEL_LKM && Natives.isLkmMode
             if (lkmMode) {

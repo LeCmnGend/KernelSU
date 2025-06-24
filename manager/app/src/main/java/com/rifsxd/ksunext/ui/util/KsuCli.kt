@@ -28,7 +28,6 @@ import java.io.File
  * @date 2023/1/1.
  */
 private const val TAG = "KsuCli"
-private const val BUSYBOX = "/data/adb/ksu/bin/busybox"
 
 private fun ksuDaemonMagicPath(): String {
     return ksuApp.applicationInfo.nativeLibraryDir + File.separator + "libksud_magic.so"
@@ -491,7 +490,7 @@ fun moduleBackup(): Boolean {
     val internalBackupDir = "/sdcard/.ksunext/modules"
     val internalBackupPath = "$internalBackupDir/$tarName"
 
-    val tarCmd = "$BUSYBOX tar -cpf $tarPath -C /data/adb/modules $(ls /data/adb/modules)"
+    val tarCmd = "tar -cpf $tarPath -C /data/adb/modules $(ls /data/adb/modules)"
     val tarResult = ShellUtils.fastCmd(shell, tarCmd).trim()
     if (tarResult.isNotEmpty()) return false
 
@@ -512,7 +511,7 @@ fun moduleRestore(): Boolean {
     val tarPath = ShellUtils.fastCmd(shell, findTarCmd).trim()
     if (tarPath.isEmpty()) return false
 
-    val extractCmd = "$BUSYBOX tar -xpf $tarPath -C /data/adb/modules_update"
+    val extractCmd = "tar -xpf $tarPath -C /data/adb/modules_update"
     val extractResult = ShellUtils.fastCmd(shell, extractCmd).trim()
     return extractResult.isEmpty()
 }
@@ -534,7 +533,7 @@ fun allowlistBackup(): Boolean {
     val internalBackupDir = "/sdcard/.ksunext/allowlist"
     val internalBackupPath = "$internalBackupDir/$tarName"
 
-    val tarCmd = "$BUSYBOX tar -cpf $tarPath -C /data/adb/ksu .allowlist"
+    val tarCmd = "tar -cpf $tarPath -C /data/adb/ksu .allowlist"
     val tarResult = ShellUtils.fastCmd(shell, tarCmd).trim()
     if (tarResult.isNotEmpty()) return false
 
@@ -557,7 +556,7 @@ fun allowlistRestore(): Boolean {
     if (tarPath.isEmpty()) return false
 
     // Extract the tar to /data/adb/ksu (restores .allowlist folder with permissions)
-    val extractCmd = "$BUSYBOX tar -xpf $tarPath -C /data/adb/ksu"
+    val extractCmd = "tar -xpf $tarPath -C /data/adb/ksu"
     val extractResult = ShellUtils.fastCmd(shell, extractCmd).trim()
     return extractResult.isEmpty()
 }
@@ -624,7 +623,7 @@ fun currentMountSystem(): String {
 
 fun getModuleSize(dir: File): Long {
     val shell = getRootShell()
-    val cmd = "$BUSYBOX du -sb '${dir.absolutePath}' | awk '{print \$1}'"
+    val cmd = "du -sb '${dir.absolutePath}' | awk '{print \$1}'"
     val result = ShellUtils.fastCmd(shell, cmd).trim()
     return result.toLongOrNull() ?: 0L
 }
