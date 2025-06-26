@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -38,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -53,11 +56,14 @@ import com.rifsxd.ksunext.Natives
 import com.rifsxd.ksunext.ksuApp
 import com.rifsxd.ksunext.ui.screen.BottomBarDestination
 import com.rifsxd.ksunext.ui.theme.KernelSUTheme
+import com.rifsxd.ksunext.ui.util.*
 import com.rifsxd.ksunext.ui.util.LocalSnackbarHost
 import com.rifsxd.ksunext.ui.util.rootAvailable
 import com.rifsxd.ksunext.ui.util.install
 import com.rifsxd.ksunext.ui.util.isSuCompatDisabled
 import com.rifsxd.ksunext.ui.screen.FlashIt
+import com.rifsxd.ksunext.ui.viewmodel.ModuleViewModel
+import com.rifsxd.ksunext.ui.webui.initPlatform
 
 class MainActivity : ComponentActivity() {
 
@@ -103,6 +109,11 @@ class MainActivity : ComponentActivity() {
             val prefs = getSharedPreferences("settings", Context.MODE_PRIVATE)
             val amoledMode = prefs.getBoolean("enable_amoled", false)
 
+            val moduleViewModel: ModuleViewModel = viewModel()
+            val moduleUpdateCount = moduleViewModel.moduleList.count { 
+                moduleViewModel.checkUpdate(it).first.isNotEmpty()
+            }
+
             KernelSUTheme (
                 amoledMode = amoledMode
             ) {
@@ -129,6 +140,11 @@ class MainActivity : ComponentActivity() {
                     else -> true
                 }
 
+                // pre-init platform to faster start WebUI X activities
+                LaunchedEffect(Unit) {
+                    initPlatform()
+                }
+
                 Scaffold(
                     bottomBar = {
                         AnimatedVisibility(
@@ -136,7 +152,7 @@ class MainActivity : ComponentActivity() {
                             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
                             exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
                         ) {
-                            BottomBar(navController)
+                            BottomBar(navController, moduleUpdateCount)
                         }
                     },
                     contentWindowInsets = WindowInsets(0, 0, 0, 0)
@@ -163,11 +179,13 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun BottomBar(navController: NavHostController) {
+private fun BottomBar(navController: NavHostController, moduleUpdateCount: Int) {
     val navigator = navController.rememberDestinationsNavigator()
     val isManager = Natives.becomeManager(ksuApp.packageName)
     val fullFeatured = isManager && !Natives.requireNewKernel() && rootAvailable()
     val suCompatDisabled = isSuCompatDisabled()
+    val suSFS = getSuSFS()
+    val susSUMode = susfsSUS_SU_Mode()
 
     NavigationBar(
         tonalElevation = 8.dp,
@@ -177,9 +195,14 @@ private fun BottomBar(navController: NavHostController) {
     ) {
         BottomBarDestination.entries
             .filter {
-                // Hide SuperUser and Module when su compat is enabled
+                // Hide SuperUser and Module when su compat is disabled
                 if (suCompatDisabled) {
-                    it != BottomBarDestination.SuperUser && it != BottomBarDestination.Module
+                    if (suSFS == "Supported" && susSUMode == "2") {
+                        true
+                    } else {
+                        // hide SuperUser and Module
+                        it != BottomBarDestination.SuperUser && it != BottomBarDestination.Module
+                    }
                 } else true
             }
             .forEach { destination ->
@@ -200,10 +223,21 @@ private fun BottomBar(navController: NavHostController) {
                         }
                     },
                     icon = {
-                        if (isCurrentDestOnBackStack) {
-                            Icon(destination.iconSelected, stringResource(destination.label))
+                        // Show badge for Module icon if moduleUpdateCount > 0
+                        if (destination == BottomBarDestination.Module && moduleUpdateCount > 0) {
+                            BadgedBox(badge = { Badge { Text(moduleUpdateCount.toString()) } }) {
+                                if (isCurrentDestOnBackStack) {
+                                    Icon(destination.iconSelected, stringResource(destination.label))
+                                } else {
+                                    Icon(destination.iconNotSelected, stringResource(destination.label))
+                                }
+                            }
                         } else {
-                            Icon(destination.iconNotSelected, stringResource(destination.label))
+                            if (isCurrentDestOnBackStack) {
+                                Icon(destination.iconSelected, stringResource(destination.label))
+                            } else {
+                                Icon(destination.iconNotSelected, stringResource(destination.label))
+                            }
                         }
                     },
                     label = { Text(stringResource(destination.label)) },
