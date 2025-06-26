@@ -119,48 +119,48 @@ int main(int argc, char *argv[]) {
 				ptr_buf += str_len;
 			}
 			if (enabled_features & (1 << 5)) {
-				str_len = strlen("CONFIG_KSU_SUSFS_SUS_OVERLAYFS\n");
-				strncpy(ptr_buf, "CONFIG_KSU_SUSFS_SUS_OVERLAYFS\n", str_len);
-				ptr_buf += str_len;
-			}
-			if (enabled_features & (1 << 6)) {
 				str_len = strlen("CONFIG_KSU_SUSFS_TRY_UMOUNT\n");
 				strncpy(ptr_buf, "CONFIG_KSU_SUSFS_TRY_UMOUNT\n", str_len);
 				ptr_buf += str_len;
 			}
-			if (enabled_features & (1 << 7)) {
+			if (enabled_features & (1 << 6)) {
 				str_len = strlen("CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT\n");
 				strncpy(ptr_buf, "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT\n", str_len);
 				ptr_buf += str_len;
 			}
-			if (enabled_features & (1 << 8)) {
+			if (enabled_features & (1 << 7)) {
 				str_len = strlen("CONFIG_KSU_SUSFS_SPOOF_UNAME\n");
 				strncpy(ptr_buf, "CONFIG_KSU_SUSFS_SPOOF_UNAME\n", str_len);
 				ptr_buf += str_len;
 			}
-			if (enabled_features & (1 << 9)) {
+			if (enabled_features & (1 << 8)) {
 				str_len = strlen("CONFIG_KSU_SUSFS_ENABLE_LOG\n");
 				strncpy(ptr_buf, "CONFIG_KSU_SUSFS_ENABLE_LOG\n", str_len);
 				ptr_buf += str_len;
 			}
-			if (enabled_features & (1 << 10)) {
+			if (enabled_features & (1 << 9)) {
 				str_len = strlen("CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS\n");
 				strncpy(ptr_buf, "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS\n", str_len);
 				ptr_buf += str_len;
 			}
-			if (enabled_features & (1 << 11)) {
+			if (enabled_features & (1 << 10)) {
 				str_len = strlen("CONFIG_KSU_SUSFS_SPOOF_BOOTCONFIG\n");
 				strncpy(ptr_buf, "CONFIG_KSU_SUSFS_SPOOF_BOOTCONFIG\n", str_len);
 				ptr_buf += str_len;
 			}
-			if (enabled_features & (1 << 12)) {
+			if (enabled_features & (1 << 11)) {
 				str_len = strlen("CONFIG_KSU_SUSFS_OPEN_REDIRECT\n");
 				strncpy(ptr_buf, "CONFIG_KSU_SUSFS_OPEN_REDIRECT\n", str_len);
 				ptr_buf += str_len;
 			}
-			if (enabled_features & (1 << 13)) {
+			if (enabled_features & (1 << 12)) {
 				str_len = strlen("CONFIG_KSU_SUSFS_SUS_SU\n");
 				strncpy(ptr_buf, "CONFIG_KSU_SUSFS_SUS_SU\n", str_len);
+				ptr_buf += str_len;
+			}
+			if (enabled_features & (1 << 13)) {
+				str_len = strlen("CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT\n");
+				strncpy(ptr_buf, "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT\n", str_len);
 				ptr_buf += str_len;
 			}
 			printf("%s", enabled_features_buf);
