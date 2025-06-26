@@ -234,7 +234,7 @@ private fun SelectInstallMethod(onSelected: (InstallMethod) -> Unit = {}) {
     val rootAvailable = rootAvailable()
     val isAbDevice = isAbDevice()
     val selectFileTip = stringResource(
-        id = R.string.select_file_tip, if (isInitBoot()) "init_boot" else "boot"
+        id = R.string.select_file_tip, if (isInitBoot()) "init_boot/vendor_boot" else "boot"
     )
     val radioOptions =
         mutableListOf<InstallMethod>(InstallMethod.SelectFile(summary = selectFileTip))
