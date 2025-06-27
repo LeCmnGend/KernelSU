@@ -111,11 +111,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                 }
             }
 
-            val moduleUpdateCount = moduleViewModel.moduleList.count { 
-                moduleViewModel.checkUpdate(it).first.isNotEmpty()
-            }
-
-            StatusCard(kernelVersion, ksuVersion, lkmMode, moduleUpdateCount) {
+            StatusCard(kernelVersion, ksuVersion, lkmMode) {
                 navigator.navigate(InstallScreenDestination)
             }
             if (isManager && Natives.requireNewKernel()) {
@@ -332,8 +328,10 @@ private fun StatusCard(
                         intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                         if (ksuVersion != null) {
                             context.startActivity(intent)
-                        } else {
+                        } else if (kernelVersion.isGKI()) {
                             onClickInstall()
+                        } else {
+                            Toast.makeText(context, "Something weird happened... 🤔", Toast.LENGTH_SHORT).show()
                         }
                     } else if (ksuVersion == null && kernelVersion.isGKI()) {
                         onClickInstall()
@@ -428,22 +426,6 @@ private fun StatusCard(
                             text = stringResource(R.string.home_module_count, getModuleCount()),
                             style = MaterialTheme.typography.bodyMedium
                         )
-
-                        if (moduleUpdateCount > 0) {
-                            Text(
-                                text = stringResource(R.string.home_module_update_count, moduleUpdateCount),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-
-                        val suSFS = getSuSFS()
-                        if (suSFS == "Supported") {
-                            Text(
-                                text = "SuSFS: " + stringResource(R.string.susfs_supported),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
                     }
                 }
 
@@ -595,7 +577,7 @@ private fun InfoCard(autoExpand: Boolean = false) {
                         Spacer(Modifier.height(16.dp))
                         InfoCardItem(
                             label = stringResource(R.string.home_susfs_version),
-                            content = "${getSuSFSVersion()} (${getSuSFSVariant()}) $susSUMode",
+                            content = "${stringResource(R.string.susfs_supported)} | ${getSuSFSVersion()} (${getSuSFSVariant()}) $susSUMode",
                             icon = painterResource(R.drawable.ic_sus),
                         )
                     }
