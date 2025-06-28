@@ -95,7 +95,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.dergoogler.mmrl.platform.Platform
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ExecuteModuleActionScreenDestination
@@ -126,7 +125,6 @@ import com.rifsxd.ksunext.ui.util.restoreModule
 import com.rifsxd.ksunext.ui.util.zygiskRequired
 import com.rifsxd.ksunext.ui.viewmodel.ModuleViewModel
 import com.rifsxd.ksunext.ui.webui.WebUIActivity
-import com.rifsxd.ksunext.ui.webui.WebUIXActivity
 import com.dergoogler.mmrl.ui.component.LabelItem
 import com.topjohnwu.superuser.io.SuFile
 
@@ -363,22 +361,11 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
                     },
                     onClickModule = { id, name, hasWebUi ->
                         if (hasWebUi) {
-                            val wxEngine = Intent(context, WebUIXActivity::class.java)
-                                .setData("kernelsu://webuix/$id".toUri())
-                                .putExtra("id", id)
-                                .putExtra("name", name)
-
-                            val ksuEngine = Intent(context, WebUIActivity::class.java)
-                                .setData("kernelsu://webui/$id".toUri())
-                                .putExtra("id", id)
-                                .putExtra("name", name)
-
                             webUILauncher.launch(
-                                if (prefs.getBoolean("use_webuix", true) && Platform.isAlive) {
-                                    wxEngine
-                                } else {
-                                    ksuEngine
-                                }
+                                Intent(context, WebUIActivity::class.java)
+                                    .setData(Uri.parse("kernelsu://webui/$id"))
+                                    .putExtra("id", id)
+                                    .putExtra("name", name)
                             )
                         }
                     },

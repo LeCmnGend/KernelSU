@@ -36,7 +36,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.dergoogler.mmrl.platform.Platform
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -102,25 +101,6 @@ fun DeveloperScreen(navigator: DestinationsNavigator) {
                 }
             }
 
-            var useWebUIX by rememberSaveable {
-                mutableStateOf(
-                    prefs.getBoolean("use_webuix", true)
-                )
-            }
-            if (ksuVersion != null) {
-                SwitchItem(
-                    beta = false,
-                    enabled = Platform.isAlive && developerOptionsEnabled,
-                    icon = Icons.Filled.WebAsset,
-                    title = stringResource(id = R.string.use_webuix),
-                    summary = stringResource(id = R.string.use_webuix_summary),
-                    checked = useWebUIX
-                ) {
-                    prefs.edit().putBoolean("use_webuix", it).apply()
-                    useWebUIX = it
-                }
-            }
-
             var enableWebDebugging by rememberSaveable {
                 mutableStateOf(
                     prefs.getBoolean("enable_web_debugging", false)
@@ -136,25 +116,6 @@ fun DeveloperScreen(navigator: DestinationsNavigator) {
                 ) {
                     prefs.edit().putBoolean("enable_web_debugging", it).apply()
                     enableWebDebugging = it
-                }
-            }
-
-            var useWebUIXEruda by rememberSaveable {
-                mutableStateOf(
-                    prefs.getBoolean("use_webuix_eruda", false)
-                )
-            }
-            if (ksuVersion != null) {
-                SwitchItem(
-                    beta = false,
-                    enabled = Platform.isAlive && useWebUIX && enableWebDebugging,
-                    icon = Icons.Filled.FormatListNumbered,
-                    title = stringResource(id = R.string.use_webuix_eruda),
-                    summary = stringResource(id = R.string.use_webuix_eruda_summary),
-                    checked = useWebUIXEruda
-                ) {
-                    prefs.edit().putBoolean("use_webuix_eruda", it).apply()
-                    useWebUIXEruda = it
                 }
             }
         }
