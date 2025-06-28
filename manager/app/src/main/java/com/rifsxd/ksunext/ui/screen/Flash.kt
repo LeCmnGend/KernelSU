@@ -151,6 +151,10 @@ fun FlashScreen(
         }
     }
 
+    BackHandler(enabled = flashing == FlashingStatus.FLASHING) {
+        // Disable back button if flashing is running
+    }
+
     BackHandler(enabled = flashing != FlashingStatus.FLASHING) {
         navigator.popBackStack()
         if (finishIntent) activity?.finish()
