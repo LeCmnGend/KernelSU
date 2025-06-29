@@ -11,6 +11,7 @@ import androidx.annotation.StringRes
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.animation.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -98,6 +99,16 @@ fun HomeScreen(navigator: DestinationsNavigator) {
             StatusCard(kernelVersion, ksuVersion, lkmMode) {
                 navigator.navigate(InstallScreenDestination)
             }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(modifier = Modifier.weight(1f)) { SuperuserCard() }
+                Box(modifier = Modifier.weight(1f)) { ModuleCard() }
+            }
+
             if (isManager && Natives.requireNewKernel()) {
                 WarningCard(
                     stringResource(id = R.string.require_kernel_version).format(
@@ -121,6 +132,60 @@ fun HomeScreen(navigator: DestinationsNavigator) {
             IssueReportCard()
             //EXperimentalCard()
             Spacer(Modifier)
+        }
+    }
+}
+
+@Composable
+private fun SuperuserCard() {
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(R.string.home_superuser_count),
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                text = getSuperuserCount().toString(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+@Composable
+private fun ModuleCard() {
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(R.string.home_module_count),
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                text = getModuleCount().toString(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
@@ -231,7 +296,11 @@ private fun TopBar(
                             rotationZ = rotation
                         }
                 )
-                Text(stringResource(R.string.app_name))
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Black,
+                )
             }
         },
         actions = {
@@ -294,7 +363,7 @@ private fun StatusCard(
 
     ElevatedCard(
         colors = CardDefaults.elevatedCardColors(containerColor = run {
-            if (ksuVersion != null) MaterialTheme.colorScheme.secondaryContainer
+            if (ksuVersion != null) MaterialTheme.colorScheme.primaryContainer
             else MaterialTheme.colorScheme.errorContainer
         })
     ) {
@@ -391,24 +460,14 @@ private fun StatusCard(
                         ) {
                             Text(
                                 text = stringResource(id = R.string.home_working),
-                                style = MaterialTheme.typography.titleMedium
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
 
                         Text(
                             text = stringResource(R.string.home_working_version, ksuVersion),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-
-                        Text(
-                            text = stringResource(
-                                R.string.home_superuser_count, getSuperuserCount()
-                            ), style = MaterialTheme.typography.bodyMedium
-                        )
-
-                        Text(
-                            text = stringResource(R.string.home_module_count, getModuleCount()),
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
                 }
@@ -512,11 +571,12 @@ private fun InfoCard(autoExpand: Boolean = false) {
                     Column {
                         Text(
                             text = label,
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
                         )
                         Text(
                             text = content,
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }
@@ -715,17 +775,18 @@ fun IssueReportCard() {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.issue_report_title),
-                    style = MaterialTheme.typography.titleSmall
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.issue_report_body),
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodySmall
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.issue_report_body_2),
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -56,7 +57,11 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
     Scaffold(
         topBar = {
             SearchAppBar(
-                title = { Text(stringResource(R.string.superuser)) },
+                title = { Text(
+                    text = stringResource(R.string.superuser),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Black,
+                ) },
                 searchText = viewModel.search,
                 onSearchTextChange = { viewModel.search = it },
                 onClearClick = { viewModel.search = "" },
@@ -133,10 +138,17 @@ private fun AppItem(
 ) {
     ListItem(
         modifier = Modifier.clickable(onClick = onClickListener),
-        headlineContent = { Text(app.label) },
+        headlineContent = { Text(
+            text = app.label,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        ) },
         supportingContent = {
             Column {
-                Text(app.packageName)
+                Text(
+                    text = app.packageName,
+                    style = MaterialTheme.typography.bodySmall
+                )
 
                 Spacer(modifier = Modifier.height(4.dp))
                 

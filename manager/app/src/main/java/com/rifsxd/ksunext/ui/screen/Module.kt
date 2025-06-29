@@ -132,6 +132,7 @@ import com.rifsxd.ksunext.ui.util.zygiskRequired
 import com.rifsxd.ksunext.ui.viewmodel.ModuleViewModel
 import com.rifsxd.ksunext.ui.webui.WebUIActivity
 import com.dergoogler.mmrl.ui.component.LabelItem
+import com.dergoogler.mmrl.ui.component.LabelItemDefaults
 import com.topjohnwu.superuser.io.SuFile
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -197,7 +198,11 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
     Scaffold(
         topBar = {
             SearchAppBar(
-                title = { Text(stringResource(R.string.module)) },
+                title = { Text(
+                    text = stringResource(R.string.module),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Black,
+                ) },
                 searchText = viewModel.search,
                 onSearchTextChange = { viewModel.search = it },
                 onClearClick = { viewModel.search = "" },
@@ -848,7 +853,7 @@ fun ModuleItem(
                             ) {
                                 LabelItem(
                                     text = formatSize(module.size),
-                                    style = com.dergoogler.mmrl.ui.component.LabelItemDefaults.style.copy(
+                                    style = LabelItemDefaults.style.copy(
                                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                                     )
@@ -856,7 +861,7 @@ fun ModuleItem(
                                 if (module.remove) {
                                     LabelItem(
                                         text = stringResource(R.string.uninstalled),
-                                        style = com.dergoogler.mmrl.ui.component.LabelItemDefaults.style.copy(
+                                        style = LabelItemDefaults.style.copy(
                                             containerColor = MaterialTheme.colorScheme.errorContainer,
                                             contentColor = MaterialTheme.colorScheme.onErrorContainer
                                         )
@@ -865,7 +870,7 @@ fun ModuleItem(
                                 if (!zygiskAvailable() && module.zygiskRequired && !module.remove) {
                                     LabelItem(
                                         text = stringResource(R.string.zygisk_required),
-                                        style = com.dergoogler.mmrl.ui.component.LabelItemDefaults.style.copy(
+                                        style = LabelItemDefaults.style.copy(
                                             containerColor = MaterialTheme.colorScheme.errorContainer,
                                             contentColor = MaterialTheme.colorScheme.onErrorContainer
                                         )
@@ -874,8 +879,8 @@ fun ModuleItem(
                                 if (updateUrl.isNotEmpty() && !module.remove && !module.update) {
                                     LabelItem(
                                         text = stringResource(R.string.module_update_available),
-                                        style = com.dergoogler.mmrl.ui.component.LabelItemDefaults.style.copy(
-                                            containerColor = MaterialTheme.colorScheme.onTertiary,
+                                        style = LabelItemDefaults.style.copy(
+                                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                                             contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                                         )
                                     )
@@ -884,7 +889,7 @@ fun ModuleItem(
                                     if (module.update) {
                                         LabelItem(
                                             text = stringResource(R.string.module_updated),
-                                            style = com.dergoogler.mmrl.ui.component.LabelItemDefaults.style.copy(
+                                            style = LabelItemDefaults.style.copy(
                                                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                                                 contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                                             )
@@ -895,7 +900,7 @@ fun ModuleItem(
                                     if (module.hasWebUi && filterZygiskModules) {
                                         LabelItem(
                                             text = stringResource(R.string.webui),
-                                            style = com.dergoogler.mmrl.ui.component.LabelItemDefaults.style.copy(
+                                            style = LabelItemDefaults.style.copy(
                                                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                                                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                                             )
@@ -904,7 +909,7 @@ fun ModuleItem(
                                     if (module.hasActionScript && filterZygiskModules) {
                                         LabelItem(
                                             text = stringResource(R.string.action),
-                                            style = com.dergoogler.mmrl.ui.component.LabelItemDefaults.style.copy(
+                                            style = LabelItemDefaults.style.copy(
                                                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                                                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                                             )
@@ -1058,7 +1063,7 @@ fun ModuleItem(
 
                             Spacer(modifier = Modifier.weight(1f, true))
 
-                            if (updateUrl.isNotEmpty()) {
+                            if (updateUrl.isNotEmpty() && !module.remove && !module.update) {
                                 Button(
                                     modifier = Modifier.defaultMinSize(52.dp, 32.dp),
                                     enabled = !module.remove,
@@ -1135,6 +1140,7 @@ fun ModuleItem(
 }
 
 fun formatSize(size: Long): String {
+    if (size == 0L) return "null"
     val kb = 1024
     val mb = kb * 1024
     val gb = mb * 1024

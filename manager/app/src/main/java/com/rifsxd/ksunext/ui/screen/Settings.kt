@@ -35,6 +35,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -148,7 +150,11 @@ fun SettingScreen(navigator: DestinationsNavigator) {
             if (ksuVersion != null) {
                 ListItem(
                     leadingContent = { Icon(Icons.Filled.Fence, profileTemplate) },
-                    headlineContent = { Text(profileTemplate) },
+                    headlineContent = { Text(
+                        text = profileTemplate,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    ) },
                     supportingContent = { Text(stringResource(id = R.string.settings_profile_template_summary)) },
                     modifier = Modifier.clickable {
                         navigator.navigate(AppProfileTemplateScreenDestination)
@@ -259,7 +265,11 @@ fun SettingScreen(navigator: DestinationsNavigator) {
             if (showRebootDialog) {
                 AlertDialog(
                     onDismissRequest = { showRebootDialog = false },
-                    title = { Text(stringResource(R.string.reboot_required)) },
+                    title = { Text(
+                        text = stringResource(R.string.reboot_required),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
+                    ) },
                     text = { Text(stringResource(R.string.reboot_message)) },
                     confirmButton = {
                         TextButton(onClick = {
@@ -303,7 +313,11 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                             shrink
                         )
                     },
-                    headlineContent = { Text(shrink) },
+                    headlineContent = { Text(
+                        text = shrink,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    ) },
                     modifier = Modifier.clickable {
                         scope.launch {
                             val result = shrinkDialog.awaitConfirm(title = shrink, content = shrinkMessage)
@@ -325,7 +339,11 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                         customization
                     )
                 },
-                headlineContent = { Text(customization) },
+                headlineContent = { Text(
+                    text = customization,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                ) },
                 modifier = Modifier.clickable {
                     navigator.navigate(CustomizationScreenDestination)
                 }
@@ -340,7 +358,11 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                             backupRestore
                         )
                     },
-                    headlineContent = { Text(backupRestore) },
+                    headlineContent = { Text(
+                        text = backupRestore,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    ) },
                     modifier = Modifier.clickable {
                         navigator.navigate(BackupRestoreScreenDestination)
                     }
@@ -348,18 +370,24 @@ fun SettingScreen(navigator: DestinationsNavigator) {
             }
 
             val developer = stringResource(id = R.string.developer)
-            ListItem(
-                leadingContent = {
-                    Icon(
-                        Icons.Filled.DeveloperBoard,
-                        developer
-                    )
-                },
-                headlineContent = { Text(developer) },
-                modifier = Modifier.clickable {
-                    navigator.navigate(DeveloperScreenDestination)
-                }
-            )
+            if (ksuVersion != null) {
+                ListItem(
+                    leadingContent = {
+                        Icon(
+                            Icons.Filled.DeveloperBoard,
+                            developer
+                        )
+                    },
+                    headlineContent = { Text(
+                        text = developer,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    ) },
+                    modifier = Modifier.clickable {
+                        navigator.navigate(DeveloperScreenDestination)
+                    }
+                )
+            }
 
             val lkmMode = Natives.version >= Natives.MINIMAL_SUPPORTED_KERNEL_LKM && Natives.isLkmMode
             if (lkmMode) {
@@ -377,7 +405,11 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                         stringResource(id = R.string.export_log)
                     )
                 },
-                headlineContent = { Text(stringResource(id = R.string.export_log)) },
+                headlineContent = { Text(
+                    text = stringResource(id = R.string.export_log),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                ) },
                 modifier = Modifier.clickable {
                     showBottomsheet = true
                 }
@@ -485,7 +517,11 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                         about
                     )
                 },
-                headlineContent = { Text(about) },
+                headlineContent = { Text(
+                    text = about,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                ) },
                 modifier = Modifier.clickable {
                     aboutDialog.show()
                 }
@@ -535,7 +571,11 @@ fun UninstallItem(
                 uninstall
             )
         },
-        headlineContent = { Text(uninstall) },
+        headlineContent = { Text(
+            text = uninstall,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        ) },
         modifier = Modifier.clickable {
             uninstallDialog.show()
         }
@@ -602,7 +642,11 @@ private fun TopBar(
     scrollBehavior: TopAppBarScrollBehavior? = null,
 ) {
     TopAppBar(
-        title = { Text(stringResource(R.string.settings)) },
+        title = { Text(
+            text = stringResource(R.string.settings),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Black,
+        ) },
         windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
         scrollBehavior = scrollBehavior
     )

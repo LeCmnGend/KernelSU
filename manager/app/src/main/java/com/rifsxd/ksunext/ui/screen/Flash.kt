@@ -41,6 +41,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
@@ -404,7 +405,9 @@ private fun TopBar(
                         FlashingStatus.SUCCESS -> R.string.flash_success
                         FlashingStatus.FAILED -> R.string.flash_failed
                     }
-                )
+                ),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Black,
             )
         },
         navigationIcon = {
