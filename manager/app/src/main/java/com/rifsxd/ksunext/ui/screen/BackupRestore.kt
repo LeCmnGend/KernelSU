@@ -136,7 +136,7 @@ fun BackupRestoreScreen(navigator: DestinationsNavigator) {
                 },
                 headlineContent = { Text(
                     text = moduleBackup,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 ) },
                 modifier = Modifier.clickable {
@@ -196,7 +196,7 @@ fun BackupRestoreScreen(navigator: DestinationsNavigator) {
                 headlineContent = { 
                     Text(
                         moduleRestore,
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = if (useOverlayFs) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.onSurface
                     ) 
@@ -230,7 +230,7 @@ fun BackupRestoreScreen(navigator: DestinationsNavigator) {
                 },
                 headlineContent = { Text(
                     text = allowlistBackup,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 ) },
                 modifier = Modifier.clickable {
@@ -256,7 +256,7 @@ fun BackupRestoreScreen(navigator: DestinationsNavigator) {
                 },
                 headlineContent = { Text(
                     text = allowlistRestore,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 ) },
                 modifier = Modifier.clickable {
