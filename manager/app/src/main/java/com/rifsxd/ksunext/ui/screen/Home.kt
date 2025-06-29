@@ -100,13 +100,16 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                 navigator.navigate(InstallScreenDestination)
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(modifier = Modifier.weight(1f)) { SuperuserCard() }
-                Box(modifier = Modifier.weight(1f)) { ModuleCard() }
+            if (ksuVersion != null && rootAvailable()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Box(modifier = Modifier.weight(1f)) { SuperuserCard() }
+                    Box(modifier = Modifier.weight(1f)) { ModuleCard() }
+                }
             }
 
             if (isManager && Natives.requireNewKernel()) {
@@ -143,22 +146,26 @@ private fun SuperuserCard() {
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         )
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = stringResource(R.string.home_superuser_count),
-                style = MaterialTheme.typography.bodySmall
-            )
-            Text(
-                text = getSuperuserCount().toString(),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.home_superuser_count),
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    text = getSuperuserCount().toString(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -170,22 +177,26 @@ private fun ModuleCard() {
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         )
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = stringResource(R.string.home_module_count),
-                style = MaterialTheme.typography.bodySmall
-            )
-            Text(
-                text = getModuleCount().toString(),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.home_module_count),
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    text = getModuleCount().toString(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -549,7 +560,7 @@ private fun InfoCard(autoExpand: Boolean = false) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 16.dp)
+                .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 24.dp)
         ) {
             @Composable
             fun InfoCardItem(label: String, content: String, icon: Any? = null) {
@@ -628,7 +639,7 @@ private fun InfoCard(autoExpand: Boolean = false) {
                 }
 
                 if (!expanded) {
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(16.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth(),
