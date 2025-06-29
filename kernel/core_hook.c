@@ -85,6 +85,13 @@ extern bool susfs_is_auto_add_sus_ksu_default_mount_enabled;
 extern bool susfs_is_auto_add_try_umount_for_bind_mount_enabled;
 #endif // #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
 
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
+extern bool susfs_is_sus_su_ready;
+extern int susfs_sus_su_working_mode;
+extern bool susfs_is_sus_su_hooks_enabled __read_mostly;
+extern bool ksu_devpts_hook;
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_SU
+
 static inline void susfs_on_post_fs_data(void) {
 	struct path path;
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
@@ -117,15 +124,12 @@ static inline void susfs_on_post_fs_data(void) {
 #endif // #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
 }
 #endif // #ifdef CONFIG_KSU_SUSFS
-#ifdef CONFIG_KSU_SUSFS_SUS_SU
-extern bool susfs_is_sus_su_ready;
-#endif // #ifdef CONFIG_KSU_SUSFS_SUS_SU
 
 static bool ksu_module_mounted = false;
 
 extern int ksu_handle_sepolicy(unsigned long arg3, void __user *arg4);
 
-static bool ksu_su_compat_enabled = true;
+bool ksu_su_compat_enabled = true;
 extern void ksu_sucompat_init();
 extern void ksu_sucompat_exit();
 
@@ -914,6 +918,12 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 
 		if (enabled) {
 			ksu_sucompat_init();
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
+			// We disable all sus_su hook whenever user toggle on su_kps
+			susfs_is_sus_su_hooks_enabled = false;
+			ksu_devpts_hook = false;
+			susfs_sus_su_working_mode = SUS_SU_DISABLED;
+#endif
 		} else {
 			ksu_sucompat_exit();
 		}
@@ -1089,7 +1099,7 @@ out_ksu_try_umount:
 	// check old process's selinux context, if it is not zygote, ignore it!
 	// because some su apps may setuid to untrusted_app but they are in global mount namespace
 	// when we umount for such process, that is a disaster!
-	bool is_zygote_child = is_zygote(old->security);
+	bool is_zygote_child = ksu_is_zygote(old->security);
 #endif
 
 	if (!is_zygote_child) {
