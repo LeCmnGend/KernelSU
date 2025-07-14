@@ -324,9 +324,6 @@ fn create_module_image(image: &str, image_size: u64) -> Result<()> {
 fn _install_module(zip: &str) -> Result<()> {
     ensure_boot_completed()?;
 
-    // print banner
-    println!(include_str!("banner"));
-
     assets::ensure_binaries(false).with_context(|| "Failed to extract assets")?;
 
     // first check if workding dir is usable
