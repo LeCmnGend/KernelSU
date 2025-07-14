@@ -327,17 +327,16 @@ pub fn restore(
         .join("vendor_ramdisk")
         .join("init_boot.cpio")
         .exists();
-    let no_vendor_ramdisk = !workdir
-        .join("vendor_ramdisk")
-        .join("ramdisk.cpio")
-        .exists();
+    let no_vendor_ramdisk = !workdir.join("vendor_ramdisk").join("ramdisk.cpio").exists();
     let is_kernelsu_patched = is_kernelsu_patched(&magiskboot, workdir)?;
     let is_kernelsu_patched_vendor_init_boot =
         is_kernelsu_patched_vendor_init_boot(&magiskboot, workdir)?;
     let is_kernelsu_patched_vendor_ramdisk =
         is_kernelsu_patched_vendor_ramdisk(&magiskboot, workdir)?;
     ensure!(
-        is_kernelsu_patched || is_kernelsu_patched_vendor_init_boot || is_kernelsu_patched_vendor_ramdisk,
+        is_kernelsu_patched
+            || is_kernelsu_patched_vendor_init_boot
+            || is_kernelsu_patched_vendor_ramdisk,
         "boot image is not patched by KernelSU Next"
     );
 
@@ -585,20 +584,18 @@ fn do_patch(
         .join("vendor_ramdisk")
         .join("init_boot.cpio")
         .exists();
-    let no_vendor_ramdisk = !workdir
-        .join("vendor_ramdisk")
-        .join("ramdisk.cpio")
-        .exists();
+    let no_vendor_ramdisk = !workdir.join("vendor_ramdisk").join("ramdisk.cpio").exists();
     if no_ramdisk && no_vendor_init_boot && no_vendor_ramdisk {
         bail!("No compatible ramdisk found.");
     }
     let is_magisk_patched = is_magisk_patched(&magiskboot, workdir)?;
     let is_magisk_patched_vendor_init_boot =
         is_magisk_patched_vendor_init_boot(&magiskboot, workdir)?;
-    let is_magisk_patched_vendor_ramdisk =
-        is_magisk_patched_vendor_ramdisk(&magiskboot, workdir)?;
+    let is_magisk_patched_vendor_ramdisk = is_magisk_patched_vendor_ramdisk(&magiskboot, workdir)?;
     ensure!(
-        !is_magisk_patched || !is_magisk_patched_vendor_init_boot || !is_magisk_patched_vendor_ramdisk,
+        !is_magisk_patched
+            || !is_magisk_patched_vendor_init_boot
+            || !is_magisk_patched_vendor_ramdisk,
         "Cannot work with Magisk patched image"
     );
 
@@ -610,7 +607,9 @@ fn do_patch(
         is_kernelsu_patched_vendor_ramdisk(&magiskboot, workdir)?;
 
     let mut need_backup = false;
-    if !is_kernelsu_patched || (no_ramdisk && !is_kernelsu_patched_vendor_init_boot) || (no_ramdisk && no_vendor_init_boot && !is_kernelsu_patched_vendor_ramdisk) 
+    if !is_kernelsu_patched
+        || (no_ramdisk && !is_kernelsu_patched_vendor_init_boot)
+        || (no_ramdisk && no_vendor_init_boot && !is_kernelsu_patched_vendor_ramdisk)
     {
         if no_ramdisk {
             if !no_vendor_init_boot {
