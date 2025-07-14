@@ -45,5 +45,4 @@ pub const BACKUP_FILENAME: &str = "stock_image.sha1";
 
 pub const MOUNT_SYSTEM: &str = "OverlayFS";
 
-pub const NO_TMPFS_PATH: &str = concatcp!(WORKING_DIR, ".notmpfs");
 pub const NO_MOUNT_PATH: &str = concatcp!(WORKING_DIR, ".nomount");
