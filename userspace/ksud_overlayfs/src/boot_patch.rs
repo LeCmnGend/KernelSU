@@ -234,9 +234,17 @@ pub fn restore(
         .status()?;
     ensure!(status.success(), "magiskboot unpack failed");
 
+    let no_ramdisk = !workdir.join("ramdisk.cpio").exists();
+    let no_vendor_init_boot = !workdir
+        .join("vendor_ramdisk")
+        .join("init_boot.cpio")
+        .exists();
+    let no_vendor_ramdisk = !workdir.join("vendor_ramdisk").join("ramdisk.cpio").exists();
     let is_kernelsu_patched = is_kernelsu_patched(&magiskboot, workdir)?;
     ensure!(
-        is_kernelsu_patched,
+        is_kernelsu_patched
+            || is_kernelsu_patched_vendor_init_boot
+            || is_kernelsu_patched_vendor_ramdisk,
         "boot image is not patched by KernelSU Next"
     );
 
@@ -457,9 +465,22 @@ fn do_patch(
     ensure!(status.success(), "magiskboot unpack failed");
 
     let no_ramdisk = !workdir.join("ramdisk.cpio").exists();
+    let no_vendor_init_boot = !workdir
+        .join("vendor_ramdisk")
+        .join("init_boot.cpio")
+        .exists();
+    let no_vendor_ramdisk = !workdir.join("vendor_ramdisk").join("ramdisk.cpio").exists();
+    if no_ramdisk && no_vendor_init_boot && no_vendor_ramdisk {
+        bail!("No compatible ramdisk found.");
+    }
     let is_magisk_patched = is_magisk_patched(&magiskboot, workdir)?;
+    let is_magisk_patched_vendor_init_boot =
+        is_magisk_patched_vendor_init_boot(&magiskboot, workdir)?;
+    let is_magisk_patched_vendor_ramdisk = is_magisk_patched_vendor_ramdisk(&magiskboot, workdir)?;
     ensure!(
-        no_ramdisk || !is_magisk_patched,
+        !is_magisk_patched
+            || !is_magisk_patched_vendor_init_boot
+            || !is_magisk_patched_vendor_ramdisk,
         "Cannot work with Magisk patched image"
     );
 
@@ -467,11 +488,31 @@ fn do_patch(
     let is_kernelsu_patched = is_kernelsu_patched(&magiskboot, workdir)?;
 
     let mut need_backup = false;
-    if !is_kernelsu_patched {
-        // kernelsu.ko is not exist, backup init if necessary
-        let status = do_cpio_cmd(&magiskboot, workdir, "exists init");
-        if status.is_ok() {
-            do_cpio_cmd(&magiskboot, workdir, "mv init init.real")?;
+    if !is_kernelsu_patched
+        || (no_ramdisk && !is_kernelsu_patched_vendor_init_boot)
+        || (no_ramdisk && no_vendor_init_boot && !is_kernelsu_patched_vendor_ramdisk)
+    {
+        if no_ramdisk {
+            if !no_vendor_init_boot {
+                // vendor init_boot patching
+                let status = do_vendor_init_boot_cpio_cmd(&magiskboot, workdir, "exists init");
+                if status.is_ok() {
+                    do_vendor_init_boot_cpio_cmd(&magiskboot, workdir, "mv init init.real")?;
+                }
+            } else if !no_vendor_ramdisk {
+                // vendor ramdisk patching
+                let status = do_vendor_ramdisk_cpio_cmd(&magiskboot, workdir, "exists init");
+                if status.is_ok() {
+                    do_vendor_ramdisk_cpio_cmd(&magiskboot, workdir, "mv init init.real")?;
+                }
+            }
+        } else {
+            // kernelsu.ko is not exist, backup init if necessary
+            let status = do_cpio_cmd(&magiskboot, workdir, "exists init");
+            if status.is_ok() {
+                do_cpio_cmd(&magiskboot, workdir, "mv init init.real")?;
+            }
+            need_backup = flash;
         }
 
         need_backup = flash;
