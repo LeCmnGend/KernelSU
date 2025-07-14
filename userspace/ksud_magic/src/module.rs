@@ -301,9 +301,6 @@ pub fn install_module(zip: &str) -> Result<()> {
     fn inner(zip: &str) -> Result<()> {
         ensure_boot_completed()?;
 
-        // print banner
-        println!(include_str!("banner"));
-
         assets::ensure_binaries(false).with_context(|| "Failed to extract assets")?;
 
         // first check if working dir is usable

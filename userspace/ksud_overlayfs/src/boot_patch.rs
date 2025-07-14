@@ -482,7 +482,6 @@ fn do_patch(
     magiskboot_path: Option<PathBuf>,
     kmi: Option<String>,
 ) -> Result<()> {
-    println!(include_str!("banner"));
 
     let patch_file = image.is_some();
 
