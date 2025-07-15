@@ -21,6 +21,10 @@ extern ssize_t ksu_kernel_write_compat(struct file *p, const void *buf,
 
 extern long ksu_copy_from_user_nofault(void *dst, const void __user *src, size_t size);
 
+extern long ksu_strncpy_from_user_retry(char *dst,
+					  const void __user *unsafe_addr,
+					  long count);
+
 /*
  * ksu_copy_from_user_retry
  * try nofault copy first, if it fails, try with plain
