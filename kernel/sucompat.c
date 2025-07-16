@@ -30,10 +30,13 @@
 
 
 extern void ksu_escape_to_root(void);
-
 static bool ksu_sucompat_non_kp __read_mostly = true;
 
-static void __user *userspace_stack_buffer(const void *d, size_t len)
+static const char sh_path[] = "/system/bin/sh";
+static const char ksud_path[] = KSUD_PATH;
+static const char su[] = SU_PATH;
+
+static inline void __user *userspace_stack_buffer(const void *d, size_t len)
 {
 	/* To avoid having to mmap a page in userspace, just write below the stack
    * pointer. */
@@ -42,17 +45,13 @@ static void __user *userspace_stack_buffer(const void *d, size_t len)
 	return copy_to_user(p, d, len) ? NULL : p;
 }
 
-static char __user *sh_user_path(void)
+static inline char __user *sh_user_path(void)
 {
-	static const char sh_path[] = "/system/bin/sh";
-
 	return userspace_stack_buffer(sh_path, sizeof(sh_path));
 }
 
-static char __user *ksud_user_path(void)
+static inline char __user *ksud_user_path(void)
 {
-	static const char ksud_path[] = KSUD_PATH;
-
 	return userspace_stack_buffer(ksud_path, sizeof(ksud_path));
 }
 
@@ -62,9 +61,6 @@ static __always_inline bool is_su_allowed(const void *ptr_to_check)
 {
 	barrier();
 	if (!ksu_sucompat_non_kp)
-		return false;
-
-	if (likely(!ksu_is_allow_uid(current_uid().val)))
 		return false;
 
 	if (unlikely(!ptr_to_check))
@@ -77,8 +73,6 @@ static int ksu_sucompat_user_common(const char __user **filename_user,
 				const char *syscall_name,
 				const bool escalate)
 {
-	const char su[] = SU_PATH;
-
 	char path[sizeof(su)]; // sizeof includes nullterm already!
 	if (ksu_copy_from_user_retry(path, *filename_user, sizeof(path)))
 		return 0;
@@ -104,18 +98,39 @@ static int ksu_sucompat_user_common(const char __user **filename_user,
 int ksu_handle_faccessat(int *dfd, const char __user **filename_user, int *mode,
 			 int *__unused_flags)
 {
+#ifndef CONFIG_KSU_SUSFS_SUS_SU
 	if (!is_su_allowed((const void *)filename_user))
 		return 0;
-
+#endif
 	return ksu_sucompat_user_common(filename_user, "faccessat", false);
 }
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0) && defined(CONFIG_KSU_SUSFS_SUS_SU)
+struct filename* susfs_ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags) {
+	struct filename *name = getname_flags(*filename_user, getname_statx_lookup_flags(*flags), NULL);
+
+	if (unlikely(IS_ERR(name) || name->name == NULL)) {
+		return name;
+	}
+
+	if (likely(memcmp(name->name, su, sizeof(su)))) {
+		return name;
+	}
+
+	const char sh[] = SH_PATH;
+	pr_info("vfs_fstatat su->sh!\n");
+	memcpy((void *)name->name, sh, sizeof(sh));
+	return name;
+}
+#endif
 
 // sys_newfstatat, sys_fstat64
 int ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags)
 {
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
 	if (!is_su_allowed((const void *)filename_user))
 		return 0;
-
+#endif
 	return ksu_sucompat_user_common(filename_user, "newfstatat", false);
 }
 
@@ -124,9 +139,10 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 			       void *__never_use_argv, void *__never_use_envp,
 			       int *__never_use_flags)
 {
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
 	if (!is_su_allowed((const void *)filename_user))
 		return 0;
-
+#endif
 	return ksu_sucompat_user_common(filename_user, "sys_execve", true);
 }
 
@@ -134,8 +150,10 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 // NOT RECOMMENDED for daily use. mostly for debugging purposes.
 int ksu_getname_flags_user(const char __user **filename_user, int flags)
 {
+#ifndef CONFIG_KSU_SUSFS_SUS_SU
 	if (!is_su_allowed((const void *)filename_user))
 		return 0;
+#endif
 
 	// sys_execve always calls getname, which sets flags = 0 on getname_flags
 	// we can use it to deduce if caller is likely execve
@@ -166,8 +184,10 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 				 void *__never_use_argv, void *__never_use_envp,
 				 int *__never_use_flags)
 {
+#ifndef CONFIG_KSU_SUSFS_SUS_SU
 	if (!is_su_allowed((const void *)filename_ptr))
 		return 0;
+#endif
 
 	// struct filename *filename = *filename_ptr;
 	// return ksu_do_execveat_common((void *)filename->name, "do_execveat_common");
@@ -188,8 +208,10 @@ int ksu_legacy_execve_sucompat(const char **filename_ptr,
 				 void *__never_use_argv,
 				 void *__never_use_envp)
 {
+#ifndef CONFIG_KSU_SUSFS_SUS_SU
 	if (!is_su_allowed((const void *)filename_ptr))
 		return 0;
+#endif
 
 	return ksu_sucompat_kernel_common((void *)*filename_ptr, "do_execve_common", true);
 }
@@ -200,8 +222,10 @@ int ksu_legacy_execve_sucompat(const char **filename_ptr,
 // NOT RECOMMENDED for daily use. mostly for debugging purposes.
 int ksu_getname_flags_kernel(char **kname, int flags)
 {
+#ifndef CONFIG_KSU_SUSFS_SUS_SU
 	if (!is_su_allowed((const void *)kname))
 		return 0;
+#endif
 
 	return ksu_sucompat_kernel_common((void *)*kname, "getname_flags", !!!flags);
 }
