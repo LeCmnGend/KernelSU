@@ -497,12 +497,14 @@ fn do_patch(
                 if status.is_ok() {
                     do_vendor_init_boot_cpio_cmd(&magiskboot, workdir, "mv init init.real")?;
                 }
+                need_backup = flash;
             } else if !no_vendor_ramdisk {
                 // vendor ramdisk patching
                 let status = do_vendor_ramdisk_cpio_cmd(&magiskboot, workdir, "exists init");
                 if status.is_ok() {
                     do_vendor_ramdisk_cpio_cmd(&magiskboot, workdir, "mv init init.real")?;
                 }
+                need_backup = flash;
             }
         } else {
             // kernelsu.ko is not exist, backup init if necessary
