@@ -326,7 +326,7 @@ void ksu_sucompat_init()
 #endif
 }
 
-void ksu_sucompat_exit()
+void ksu_sucompat_exit(void)
 {
 #ifdef CONFIG_KSU_KPROBES_HOOK
 	for (int i = 0; i < ARRAY_SIZE(su_kps); i++) {

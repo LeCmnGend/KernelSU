@@ -113,7 +113,7 @@ bool is_ksu_domain()
 	return result;
 }
 
-bool is_zygote(void *sec)
+bool ksu_is_zygote(void *sec)
 {
 	struct task_security_struct *tsec = (struct task_security_struct *)sec;
 	if (!tsec) {

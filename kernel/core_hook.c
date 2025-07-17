@@ -47,15 +47,19 @@
 #include "throne_tracker.h"
 #include "kernel_compat.h"
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0) || defined(KSU_COMPAT_GET_CRED_RCU)
+#define KSU_GET_CRED_RCU
+#endif
+
 static bool ksu_module_mounted = false;
 
 extern int handle_sepolicy(unsigned long arg3, void __user *arg4);
 
 static bool ksu_su_compat_enabled = true;
-extern void ksu_sucompat_init();
-extern void ksu_sucompat_exit();
+extern void ksu_sucompat_init(void);
+extern void ksu_sucompat_exit(void);
 
-static inline bool is_allow_su()
+static inline bool is_allow_su(void)
 {
 	if (is_manager()) {
 		// we are manager, allow!
@@ -457,30 +461,6 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		return 0;
 	}
 
-	if (arg2 == CMD_ENABLE_SU) {
-		bool enabled = (arg3 != 0);
-		if (enabled == ksu_su_compat_enabled) {
-			pr_info("cmd enable su but no need to change.\n");
-			if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {// return the reply_ok directly
-				pr_err("prctl reply error, cmd: %lu\n", arg2);
-			}
-			return 0;
-		}
-
-		if (enabled) {
-			ksu_sucompat_init();
-		} else {
-			ksu_sucompat_exit();
-		}
-		ksu_su_compat_enabled = enabled;
-
-		if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
-			pr_err("prctl reply error, cmd: %lu\n", arg2);
-		}
-
-		return 0;
-	}
-
 	// all other cmds are for 'root manager'
 	if (!from_manager) {
 		return 0;
@@ -577,7 +557,7 @@ static int ksu_umount_mnt(struct path *path, int flags)
 #endif
 }
 
-static void try_umount(const char *mnt, bool check_mnt, int flags)
+static void ksu_try_umount(const char *mnt, bool check_mnt, int flags)
 {
 	struct path path;
 	int err = kern_path(mnt, 0, &path);
@@ -643,7 +623,7 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
 	// check old process's selinux context, if it is not zygote, ignore it!
 	// because some su apps may setuid to untrusted_app but they are in global mount namespace
 	// when we umount for such process, that is a disaster!
-	bool is_zygote_child = is_zygote(old->security);
+	bool is_zygote_child = ksu_is_zygote(old->security);
 	if (!is_zygote_child) {
 		pr_info("handle umount ignore non zygote child: %d\n",
 			current->pid);
@@ -657,23 +637,23 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
 
 	// fixme: use `collect_mounts` and `iterate_mount` to iterate all mountpoint and
 	// filter the mountpoint whose target is `/data/adb`
-	try_umount("/odm", true, 0);
-	try_umount("/system", true, 0);
-	try_umount("/system_ext", true, 0);
-	try_umount("/vendor", true, 0);
-	try_umount("/product", true, 0);
-	try_umount("/data/adb/modules", false, MNT_DETACH);
+	ksu_try_umount("/odm", true, 0);
+	ksu_try_umount("/system", true, 0);
+	ksu_try_umount("/system_ext", true, 0);
+	ksu_try_umount("/vendor", true, 0);
+	ksu_try_umount("/product", true, 0);
+	ksu_try_umount("/data/adb/modules", false, MNT_DETACH);
 
 	// try umount ksu temp path
-	try_umount("/debug_ramdisk", false, MNT_DETACH);
-	try_umount("/sbin", false, MNT_DETACH);
+	ksu_try_umount("/debug_ramdisk", false, MNT_DETACH);
+	ksu_try_umount("/sbin", false, MNT_DETACH);
 
 	// try umount hosts file
-	try_umount("/system/etc/hosts", false, MNT_DETACH);
+	ksu_try_umount("/system/etc/hosts", false, MNT_DETACH);
 
 	// try umount lsposed dex2oat bins
-	try_umount("/apex/com.android.art/bin/dex2oat64", false, MNT_DETACH);
-	try_umount("/apex/com.android.art/bin/dex2oat32", false, MNT_DETACH);
+	ksu_try_umount("/apex/com.android.art/bin/dex2oat64", false, MNT_DETACH);
+	ksu_try_umount("/apex/com.android.art/bin/dex2oat32", false, MNT_DETACH);
 
 	return 0;
 }
