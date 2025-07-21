@@ -1009,7 +1009,7 @@ static void ksu_sys_umount(const char *mnt, int flags)
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 void ksu_try_umount(const char *mnt, int flags, uid_t uid)
 #else
-static void ksu_try_umount(const char *mnt, int flags)
+void ksu_try_umount(const char *mnt, int flags)
 #endif
 {
 	struct path path;
@@ -1046,16 +1046,16 @@ LIST_HEAD(mount_list);
 void susfs_try_umount_all(uid_t uid) {
 	susfs_try_umount(uid);
 	/* For Legacy KSU only */
-	ksu_try_umount("/system", true, 0, uid);
-	ksu_try_umount("/system_ext", true, 0, uid);
-	ksu_try_umount("/vendor", true, 0, uid);
-	ksu_try_umount("/product", true, 0, uid);
-	ksu_try_umount("/odm", true, 0, uid);
+	ksu_try_umount("/system", 0, uid);
+	ksu_try_umount("/system_ext", 0, uid);
+	ksu_try_umount("/vendor", 0, uid);
+	ksu_try_umount("/product", 0, uid);
+	ksu_try_umount("/odm", 0, uid);
 	// - For '/data/adb/modules' we pass 'false' here because it is a loop device that we can't determine whether 
 	//   its dev_name is KSU or not, and it is safe to just umount it if it is really a mountpoint
-	ksu_try_umount("/data/adb/modules", false, MNT_DETACH, uid);
+	ksu_try_umount("/data/adb/modules", MNT_DETACH, uid);
 	/* For both Legacy KSU and Magic Mount KSU */
-	ksu_try_umount("/debug_ramdisk", true, MNT_DETACH, uid);
+	ksu_try_umount("/debug_ramdisk", MNT_DETACH, uid);
 }
 #endif
 

@@ -42,7 +42,7 @@ config KSU_SUSFS
     bool "KernelSU addon - SUSFS"
     depends on KSU
     depends on THREAD_INFO_IN_TASK
-    default n
+    default y
     help
       Patch and Enable SUSFS to kernel with KernelSU.
 
@@ -161,7 +161,7 @@ config KSU_SUSFS_OPEN_REDIRECT
 config KSU_SUSFS_SUS_SU
     bool "Enable SUS-SU in runtime temporarily"
     depends on KSU_SUSFS && KPROBES && HAVE_KPROBES && KPROBE_EVENTS
-    default y
+    default n
     help
       - Allow user to enable or disable core ksu kprobes hooks temporarily in runtime. There are 2 working modes for sus_su.
       - Mode 0 (default): Disable sus_su, and enable ksu kprobe hooks for su instead.
