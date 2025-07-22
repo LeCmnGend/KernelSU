@@ -27,7 +27,6 @@ enum NodeFileType {
     RegularFile,
     Directory,
     Symlink,
-    Whiteout,
 }
 
 impl NodeFileType {
@@ -118,7 +117,13 @@ impl Node {
             }
         }
 
-        None
+        Some(Node {
+            name: name.to_string(),
+            file_type,
+            children: Default::default(),
+            module_path: Some(PathBuf::from(module_path.as_ref())),
+            replace: false,
+        })
     }
 }
 

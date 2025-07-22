@@ -8,6 +8,8 @@
 #define KSU_COMPAT_USE_SELINUX_STATE
 #endif
 
+void setup_selinux(const char *);
+
 void ksu_setup_selinux(const char *);
 
 void ksu_setenforce(bool);

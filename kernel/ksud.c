@@ -463,17 +463,18 @@ static void stop_vfs_read_hook(void)
 	pr_info("stop vfs_read_hook\n");
 }
 
-static void stop_execve_hook()
+static void stop_execve_hook(void)
 {
 	ksu_execveat_hook = false;
 	pr_info("stop execve_hook\n");
+
 #ifdef CONFIG_KSU_SUSFS_SUS_SU
 	susfs_is_sus_su_ready = true;
 	pr_info("susfs: sus_su is ready\n");
 #endif
 }
 
-static void stop_input_hook()
+static void stop_input_hook(void)
 {
 	if (!ksu_input_hook) { return; }
 	ksu_input_hook = false;

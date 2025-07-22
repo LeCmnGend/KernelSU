@@ -6,6 +6,7 @@
 #include <linux/init_task.h>
 #include <linux/kernel.h>
 #include <linux/binfmts.h>
+
 #ifdef CONFIG_KSU_LSM_SECURITY_HOOKS
 #include <linux/lsm_hooks.h>
 #endif
@@ -84,6 +85,13 @@ extern bool susfs_is_sus_su_hooks_enabled __read_mostly;
 extern bool ksu_devpts_hook;
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_SU
 
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
+extern bool susfs_is_sus_su_ready;
+extern int susfs_sus_su_working_mode;
+extern bool susfs_is_sus_su_hooks_enabled __read_mostly;
+extern bool ksu_devpts_hook;
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_SU
+
 static inline void susfs_on_post_fs_data(void) {
 	struct path path;
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
@@ -117,15 +125,14 @@ static inline void susfs_on_post_fs_data(void) {
 }
 #endif // #ifdef CONFIG_KSU_SUSFS
 
-
 static bool ksu_module_mounted = false;
 static unsigned int ksu_unmountable_count = 0;
 
 extern int ksu_handle_sepolicy(unsigned long arg3, void __user *arg4);
 
 bool ksu_su_compat_enabled = true;
-extern void ksu_sucompat_init(void);
-extern void ksu_sucompat_exit(void);
+extern void ksu_sucompat_init();
+extern void ksu_sucompat_exit();
 
 static inline bool is_allow_su(void)
 {
@@ -915,6 +922,28 @@ LSM_HANDLER_TYPE ksu_handle_prctl(int option, unsigned long arg2, unsigned long 
 	}
 #endif //#ifdef CONFIG_KSU_SUSFS
 
+	if (arg2 == CMD_ENABLE_SU) {
+		bool enabled = (arg3 != 0);
+		if (enabled == ksu_su_compat_enabled) {
+			pr_info("cmd enable su but no need to change.\n");
+			if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {// return the reply_ok directly
+				pr_err("prctl reply error, cmd: %lu\n", arg2);
+			}
+			return 0;
+		}
+
+		if (enabled) {
+			ksu_sucompat_init();
+		} else {
+			ksu_sucompat_exit();
+		}
+		ksu_su_compat_enabled = enabled;
+
+		if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
+			pr_err("prctl reply error, cmd: %lu\n", arg2);
+		}
+		return 0;
+	}
 
 	// all other cmds are for 'root manager'
 	if (!from_manager) {
@@ -1024,6 +1053,12 @@ void ksu_try_umount(const char *mnt, int flags)
 		return;
 	}
 
+#if defined(CONFIG_KSU_SUSFS_TRY_UMOUNT) && defined(CONFIG_KSU_SUSFS_ENABLE_LOG)
+	if (susfs_is_log_enabled) {
+		pr_info("susfs: umounting '%s' for uid: %d\n", mnt, uid);
+	}
+#endif
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) || defined(KSU_HAS_PATH_UMOUNT)
 	ksu_path_umount(mnt, &path, flags);
 	// dont call path_put here!!
@@ -1059,6 +1094,11 @@ void susfs_try_umount_all(uid_t uid) {
 }
 #endif
 
+struct mount_entry {
+    char *umountable;
+    struct list_head list;
+};
+LIST_HEAD(mount_list);
 
 LSM_HANDLER_TYPE ksu_handle_setuid(struct cred *new, const struct cred *old)
 {
@@ -1360,7 +1400,7 @@ static struct security_hook_list ksu_hooks[] = {
 	LSM_HOOK_INIT(sb_mount, ksu_sb_mount),
 	LSM_HOOK_INIT(inode_permission, ksu_inode_permission),
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) || defined(CONFIG_KSU_ALLOWLIST_WORKAROUND)
-	LSM_HOOK_INIT(key_permission, ksu_key_permission)
+	LSM_HOOK_INIT(key_permission, ksu_key_permission),
 #endif
 };
 
@@ -1376,11 +1416,7 @@ void __init ksu_lsm_hook_init(void)
 
 void __init ksu_core_init(void)
 {
-#ifdef CONFIG_KSU_LSM_SECURITY_HOOKS
 	ksu_lsm_hook_init();
-#else
-	pr_info("ksu_core_init: LSM hooks not in use.\n");
-#endif
 }
 #else
 void __init ksu_core_init(void)

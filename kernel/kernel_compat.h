@@ -6,6 +6,9 @@
 #include "linux/version.h"
 #include "linux/key.h"
 
+extern long ksu_copy_from_user_nofault(void *dst, 
+            const void __user *src, size_t size);
+
 extern long ksu_strncpy_from_user_retry(char *dst,
 					  const void __user *unsafe_addr,
 					  long count);
@@ -23,7 +26,6 @@ extern ssize_t ksu_kernel_write_compat(struct file *p, const void *buf,
 				       size_t count, loff_t *pos);
 
 extern int ksu_access_ok(const void *addr, unsigned long size);
-extern long ksu_copy_from_user_nofault(void *dst, const void __user *src, size_t size);
 
 /*
  * ksu_copy_from_user_retry

@@ -303,9 +303,6 @@ pub fn install_module(zip: &str) -> Result<()> {
     fn inner(zip: &str) -> Result<()> {
         ensure_boot_completed()?;
 
-        // print banner
-        println!(include_str!("banner"));
-
         assets::ensure_binaries(false).with_context(|| "Failed to extract assets")?;
 
         // first check if working dir is usable
@@ -448,10 +445,6 @@ pub fn restore_module(id: &str) -> Result<()> {
 
         Ok(())
     })
-}
-
-pub fn restore_uninstall_module(id: &str) -> Result<()> {
-    mark_module_state(id, defs::REMOVE_FILE_NAME, false)
 }
 
 pub fn run_action(id: &str) -> Result<()> {

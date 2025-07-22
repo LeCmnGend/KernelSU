@@ -7,6 +7,11 @@
 #include <linux/types.h>
 #include <linux/uaccess.h>
 #include <linux/version.h>
+
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
+#include <linux/susfs_def.h>
+#endif
+
 #include <linux/ptrace.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #include <linux/sched/task_stack.h>
@@ -73,6 +78,23 @@ static int ksu_sucompat_user_common(const char __user **filename_user,
 				const char *syscall_name,
 				const bool escalate)
 {
+	barrier();
+	if (!ksu_sucompat_non_kp)
+		return false;
+
+	if (likely(!ksu_is_allow_uid(current_uid().val)))
+		return false;
+
+	if (unlikely(!ptr_to_check))
+		return false;
+
+	return true;
+}
+
+static int ksu_sucompat_user_common(const char __user **filename_user,
+				const char *syscall_name,
+				const bool escalate)
+{
 	const char su[] = SU_PATH;
 
 	char path[sizeof(su)]; // sizeof includes nullterm already!
@@ -92,61 +114,24 @@ static int ksu_sucompat_user_common(const char __user **filename_user,
 		pr_info("%s su->sh!\n", syscall_name);
 		*filename_user = sh_user_path();
 	}
-
-	return 0;
+	return ksu_sucompat_user_common(filename_user, "newfstatat", false);
 }
 
 // sys_faccessat
 int ksu_handle_faccessat(int *dfd, const char __user **filename_user, int *mode,
 			 int *__unused_flags)
 {
-#ifndef CONFIG_KSU_SUSFS_SUS_SU
 	if (!is_su_allowed((const void *)filename_user))
 		return 0;
-#endif
- 
-#ifdef CONFIG_KSU_SUSFS_SUS_SU
-	char path[sizeof(su)] = {0};
-#else
- 	char path[sizeof(su) + 1];
- 	memset(path, 0, sizeof(path));
-#endif
 
 	return ksu_sucompat_user_common(filename_user, "faccessat", false);
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0) && defined(CONFIG_KSU_SUSFS_SUS_SU)
-struct filename* susfs_ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags) {
-	struct filename *name = getname_flags(*filename_user, getname_statx_lookup_flags(*flags), NULL);
-
-	if (unlikely(IS_ERR(name) || name->name == NULL)) {
-		return name;
-	}
-
-	if (likely(memcmp(name->name, su, sizeof(su)))) {
-		return name;
-	}
-
-	const char sh[] = SH_PATH;
-	pr_info("vfs_fstatat su->sh!\n");
-	memcpy((void *)name->name, sh, sizeof(sh));
-	return name;
-}
-#endif
-
 // sys_newfstatat, sys_fstat64
 int ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags)
 {
-#ifndef CONFIG_KSU_SUSFS_SUS_SU
 	if (!is_su_allowed((const void *)filename_user))
 		return 0;
-#endif
-#ifdef CONFIG_KSU_SUSFS_SUS_SU
-	char path[sizeof(su)] = {0};
-#else
- 	char path[sizeof(su) + 1];
- 	memset(path, 0, sizeof(path));
-#endif
 
 	return ksu_sucompat_user_common(filename_user, "newfstatat", false);
 }
@@ -156,10 +141,8 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 			       void *__never_use_argv, void *__never_use_envp,
 			       int *__never_use_flags)
 {
-#ifndef CONFIG_KSU_SUSFS_SUS_SU
 	if (!is_su_allowed((const void *)filename_user))
 		return 0;
-#endif
 
 	return ksu_sucompat_user_common(filename_user, "sys_execve", true);
 }
@@ -168,10 +151,8 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 // NOT RECOMMENDED for daily use. mostly for debugging purposes.
 int ksu_getname_flags_user(const char __user **filename_user, int flags)
 {
-#ifndef CONFIG_KSU_SUSFS_SUS_SU
 	if (!is_su_allowed((const void *)filename_user))
 		return 0;
-#endif
 
 	// sys_execve always calls getname, which sets flags = 0 on getname_flags
 	// we can use it to deduce if caller is likely execve
@@ -186,9 +167,7 @@ static int ksu_sucompat_kernel_common(void *filename_ptr, const char *function_n
 
 	if (escalate) {
 		pr_info("%s su found\n", function_name);
-#ifndef CONFIG_KSU_SUSFS_SUS_SU
 		memcpy(filename_ptr, KSUD_PATH, sizeof(KSUD_PATH));
-#endif
 		ksu_escape_to_root();
 	} else {
 		pr_info("%s su->sh\n", function_name);
@@ -204,10 +183,8 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 				 void *__never_use_argv, void *__never_use_envp,
 				 int *__never_use_flags)
 {
-#ifndef CONFIG_KSU_SUSFS_SUS_SU
 	if (!is_su_allowed((const void *)filename_ptr))
 		return 0;
-#endif
 
 	// struct filename *filename = *filename_ptr;
 	// return ksu_do_execveat_common((void *)filename->name, "do_execveat_common");
@@ -242,7 +219,6 @@ int ksu_getname_flags_kernel(char **kname, int flags)
 {
 	if (!is_su_allowed((const void *)kname))
 		return 0;
-
 	return ksu_sucompat_kernel_common((void *)*kname, "getname_flags", !!!flags);
 }
 
