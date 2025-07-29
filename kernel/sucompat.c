@@ -74,7 +74,7 @@ int ksu_handle_faccessat(int *dfd, const char __user **filename_user, int *mode,
 #endif
 
 #ifdef CONFIG_KSU_SUSFS_SUS_SU
-	char path[sizeof(su)] = {0};
+	char path[sizeof(su) + 1] = {0};
 #else
 	char path[sizeof(su) + 1];
 	memset(path, 0, sizeof(path));
@@ -128,7 +128,7 @@ int ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags)
 	}
 
 #ifdef CONFIG_KSU_SUSFS_SUS_SU
-	char path[sizeof(su)] = {0};
+	char path[sizeof(su) + 1] = {0};
 #else
 	char path[sizeof(su) + 1];
 	memset(path, 0, sizeof(path));
@@ -202,7 +202,7 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 {
 	//const char su[] = SU_PATH;
 #ifdef CONFIG_KSU_SUSFS_SUS_SU
-	char path[sizeof(su)] = {0};
+	char path[sizeof(su) + 1] = {0};
 #else
 	char path[sizeof(su) + 1];
 #endif
