@@ -146,6 +146,8 @@ void ksu_apply_kernelsu_rules(void)
 	susfs_set_ksu_sid();
 	susfs_set_zygote_sid();
 #endif
+	// https://android-review.googlesource.com/c/platform/system/logging/+/3725346
+	ksu_dontaudit(db, ALL, KERNEL_SU_DOMAIN, "dir", "getattr");
 
 	mutex_unlock(&ksu_rules);
 }
