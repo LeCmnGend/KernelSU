@@ -330,7 +330,9 @@ static struct kernel_param_ops expected_size_ops = {
 module_param_cb(ksu_debug_manager_uid, &expected_size_ops,
 		&ksu_debug_manager_uid, S_IRUSR | S_IWUSR);
 
-#else
+#endif
+
+#ifdef CONFIG_KSU_SWITCH_MANAGER
 
 static int set_expected_size(const char *val, const struct kernel_param *kp)
 {
@@ -401,13 +403,5 @@ bool ksu_is_manager_apk(char *path)
 	pr_info("%s: expected size: %u, expected hash: %s\n",
 		path, expected_manager_size, expected_manager_hash);
 
-#ifdef CONFIG_KSU_SUSFS
-	return (check_v2_signature(path, EXPECTED_MANAGER_SIZE, EXPECTED_MANAGER_HASH)
-		|| check_v2_signature(path, 0x363, "4359c171f32543394cbc23ef908c4bb94cad7c8087002ba164c8230948c21549") // dummy.keystore
-		|| check_v2_signature(path, 384, "7e0c6d7278a3bb8e364e0fcba95afaf3666cf5ff3c245a3b63c8833bd0445cc4") // 5ec1cff
-	/*	|| check_v2_signature(path, custom_size, custom_hash)  // add more as you like 	*/
-	);
-#else
 	return check_v2_signature(path, expected_manager_size, expected_manager_hash);
-#endif
 }

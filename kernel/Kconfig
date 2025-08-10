@@ -12,7 +12,7 @@ config KSU_KPROBES_HOOK
 	bool "Use kprobes for kernelsu"
 	depends on KSU
 	depends on KPROBES
-	default n
+	default y
 	help
 	  Disable if you use manual hooks.
 
@@ -38,6 +38,13 @@ config KSU_LSM_SECURITY_HOOKS
 	help
 	  Disabling this is mostly only useful for kernel 4.1 and older.
 	  Make sure to implement manual hooks on security/security.c.
+
+config KSU_SWITCH_MANAGER
+	bool "KernelSU switch manager support"
+	depends on KSU
+	default n
+	help
+	  Enable KernelSU switch manager support.
 
 menu "KernelSU - SUSFS"
 config KSU_SUSFS
