@@ -1,3 +1,8 @@
+
+#include <linux/rcupdate.h>
+#include <linux/slab.h>
+#include <linux/task_work.h>
+#include "manager.h"
 #include <asm/current.h>
 #include <linux/compat.h>
 #include <linux/cred.h>
@@ -109,6 +114,13 @@ struct user_arg_ptr {
     } ptr;
 };
 
+static void on_post_fs_data_cbfun(struct callback_head *cb)
+{
+    on_post_fs_data();
+}
+
+static struct callback_head on_post_fs_data_cb = { .func = on_post_fs_data_cbfun };
+
 // since _ksud handler only uses argv and envp for comparisons
 // this can probably work
 // adapted from ksu_handle_execveat_ksud
@@ -199,7 +211,15 @@ first_app_process:
     if (first_app_process && !memcmp(filename, app_process, sizeof(app_process) - 1)) {
         first_app_process = false;
         pr_info("%s: exec app_process, /data prepared, second_stage: %d\n", __func__, init_second_stage_executed);
-        on_post_fs_data();
+
+        struct task_struct *init_task;
+        rcu_read_lock();
+        init_task = rcu_dereference(current->parent);
+        if (init_task) {
+            task_work_add(init_task, &on_post_fs_data_cb, true);
+        }
+        rcu_read_unlock();
+
         stop_execve_hook();
     }
 
