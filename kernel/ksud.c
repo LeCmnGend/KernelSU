@@ -165,7 +165,6 @@ static int ksu_handle_bprm_ksud(const char *filename, const char *argv1, const c
             pr_info("%s: /system/bin/init second_stage executed\n", __func__);
             apply_kernelsu_rules();
             init_second_stage_executed = true;
-            ksu_android_ns_fs_check();
         }
     }
 
@@ -176,7 +175,6 @@ static int ksu_handle_bprm_ksud(const char *filename, const char *argv1, const c
             pr_info("%s: /init --second-stage executed\n", __func__);
             apply_kernelsu_rules();
             init_second_stage_executed = true;
-            ksu_android_ns_fs_check();
         }
     }
 
@@ -203,7 +201,6 @@ static int ksu_handle_bprm_ksud(const char *filename, const char *argv1, const c
             pr_info("%s: /init +envp: INIT_SECOND_STAGE executed\n", __func__);
             apply_kernelsu_rules();
             init_second_stage_executed = true;
-            ksu_android_ns_fs_check();
         }
     }
 

@@ -31,7 +31,8 @@ static DEFINE_MUTEX(allowlist_mutex);
 static struct root_profile default_root_profile;
 static struct non_root_profile default_non_root_profile;
 
-static int allow_list_arr[PAGE_SIZE / sizeof(int)] __read_mostly __aligned(PAGE_SIZE);
+static int allow_list_arr[PAGE_SIZE / sizeof(int)] __read_mostly
+    __aligned(PAGE_SIZE);
 static int allow_list_pointer __read_mostly = 0;
 
 static void remove_uid_from_arr(uid_t uid)
@@ -72,7 +73,7 @@ static void init_default_profiles(void)
     default_root_profile.groups_count = 1;
     default_root_profile.groups[0] = 0;
     memcpy(&default_root_profile.capabilities.effective, &full_cap,
-        sizeof(default_root_profile.capabilities.effective));
+           sizeof(default_root_profile.capabilities.effective));
     default_root_profile.namespaces = 0;
     strcpy(default_root_profile.selinux_domain, KSU_DEFAULT_SELINUX_DOMAIN);
 
@@ -102,7 +103,7 @@ void ksu_show_allow_list(void)
     list_for_each (pos, &allow_list) {
         p = list_entry(pos, struct perm_data, list);
         pr_info("uid :%d, allow: %d\n", p->profile.current_uid,
-            p->profile.allow_su);
+                p->profile.allow_su);
     }
 }
 
@@ -115,7 +116,8 @@ static void ksu_grant_root_to_shell(void)
         .current_uid = 2000,
     };
     strcpy(profile.key, "com.android.shell");
-    strcpy(profile.rp_config.profile.selinux_domain, KSU_DEFAULT_SELINUX_DOMAIN);
+    strcpy(profile.rp_config.profile.selinux_domain,
+           KSU_DEFAULT_SELINUX_DOMAIN);
     ksu_set_app_profile(&profile, false);
 }
 #endif
@@ -141,9 +143,10 @@ exit:
     return found;
 }
 
-static inline bool forbid_system_uid(uid_t uid) {
-    #define SHELL_UID 2000
-    #define SYSTEM_UID 1000
+static inline bool forbid_system_uid(uid_t uid)
+{
+#define SHELL_UID 2000
+#define SYSTEM_UID 1000
     return uid < SHELL_UID && uid != SYSTEM_UID;
 }
 
@@ -204,22 +207,24 @@ bool ksu_set_app_profile(struct app_profile *profile, bool persist)
     memcpy(&p->profile, profile, sizeof(*profile));
     if (profile->allow_su) {
         pr_info("set root profile, key: %s, uid: %d, gid: %d, context: %s\n",
-            profile->key, profile->current_uid,
-            profile->rp_config.profile.gid,
-            profile->rp_config.profile.selinux_domain);
+                profile->key, profile->current_uid,
+                profile->rp_config.profile.gid,
+                profile->rp_config.profile.selinux_domain);
     } else {
         pr_info("set app profile, key: %s, uid: %d, umount modules: %d\n",
-            profile->key, profile->current_uid,
-            profile->nrp_config.profile.umount_modules);
+                profile->key, profile->current_uid,
+                profile->nrp_config.profile.umount_modules);
     }
     list_add_tail(&p->list, &allow_list);
 
 out:
     if (profile->current_uid <= BITMAP_UID_MAX) {
         if (profile->allow_su)
-            allow_list_bitmap[profile->current_uid / BITS_PER_BYTE] |= 1 << (profile->current_uid % BITS_PER_BYTE);
+            allow_list_bitmap[profile->current_uid / BITS_PER_BYTE] |=
+                1 << (profile->current_uid % BITS_PER_BYTE);
         else
-            allow_list_bitmap[profile->current_uid / BITS_PER_BYTE] &= ~(1 << (profile->current_uid % BITS_PER_BYTE));
+            allow_list_bitmap[profile->current_uid / BITS_PER_BYTE] &=
+                ~(1 << (profile->current_uid % BITS_PER_BYTE));
     } else {
         if (profile->allow_su) {
             /*
@@ -266,13 +271,15 @@ bool __ksu_is_allow_uid(uid_t uid)
         return false;
     }
 
-    if (likely(ksu_is_manager_uid_valid()) && unlikely(ksu_get_manager_uid() == uid)) {
+    if (likely(ksu_is_manager_uid_valid()) &&
+        unlikely(ksu_get_manager_uid() == uid)) {
         // manager is always allowed!
         return true;
     }
 
     if (likely(uid <= BITMAP_UID_MAX)) {
-        return !!(allow_list_bitmap[uid / BITS_PER_BYTE] & (1 << (uid % BITS_PER_BYTE)));
+        return !!(allow_list_bitmap[uid / BITS_PER_BYTE] &
+                  (1 << (uid % BITS_PER_BYTE)));
     } else {
         for (i = 0; i < allow_list_pointer; i++) {
             if (allow_list_arr[i] == uid)
@@ -295,7 +302,8 @@ bool __ksu_is_allow_uid_for_current(uid_t uid)
 bool ksu_uid_should_umount(uid_t uid)
 {
     struct app_profile profile = { .current_uid = uid };
-    if (likely(ksu_is_manager_uid_valid()) && unlikely(ksu_get_manager_uid() == uid)) {
+    if (likely(ksu_is_manager_uid_valid()) &&
+        unlikely(ksu_get_manager_uid() == uid)) {
         // we should not umount on manager!
         return false;
     }
@@ -368,26 +376,22 @@ void persistent_allow_list()
     }
 
     // store magic and version
-    if (ksu_kernel_write_compat(fp, &magic, sizeof(magic), &off) !=
-        sizeof(magic)) {
+    if (kernel_write(fp, &magic, sizeof(magic), &off) != sizeof(magic)) {
         pr_err("save_allow_list write magic failed.\n");
         goto exit;
     }
 
-    if (ksu_kernel_write_compat(fp, &version, sizeof(version), &off) !=
-        sizeof(version)) {
+    if (kernel_write(fp, &version, sizeof(version), &off) != sizeof(version)) {
         pr_err("save_allow_list write version failed.\n");
         goto exit;
     }
 
     list_for_each (pos, &allow_list) {
         p = list_entry(pos, struct perm_data, list);
-        pr_info("save allow list, name: %s uid: %d, allow: %d\n",
-            p->profile.key, p->profile.current_uid,
-            p->profile.allow_su);
+        pr_info("save allow list, name: %s uid :%d, allow: %d\n",
+                p->profile.key, p->profile.current_uid, p->profile.allow_su);
 
-        ksu_kernel_write_compat(fp, &p->profile, sizeof(p->profile),
-                    &off);
+        kernel_write(fp, &p->profile, sizeof(p->profile), &off);
     }
 
 exit:
@@ -415,15 +419,13 @@ void ksu_load_allow_list()
     }
 
     // verify magic
-    if (ksu_kernel_read_compat(fp, &magic, sizeof(magic), &off) !=
-            sizeof(magic) ||
+    if (kernel_read(fp, &magic, sizeof(magic), &off) != sizeof(magic) ||
         magic != FILE_MAGIC) {
         pr_err("allowlist file invalid: %d!\n", magic);
         goto exit;
     }
 
-    if (ksu_kernel_read_compat(fp, &version, sizeof(version), &off) !=
-        sizeof(version)) {
+    if (kernel_read(fp, &version, sizeof(version), &off) != sizeof(version)) {
         pr_err("allowlist read version: %d failed\n", version);
         goto exit;
     }
@@ -433,16 +435,15 @@ void ksu_load_allow_list()
     while (true) {
         struct app_profile profile;
 
-        ret = ksu_kernel_read_compat(fp, &profile, sizeof(profile),
-                         &off);
+        ret = kernel_read(fp, &profile, sizeof(profile), &off);
 
         if (ret <= 0) {
             pr_info("load_allow_list read err: %zd\n", ret);
             break;
         }
 
-        pr_info("load_allow_uid, name: %s, uid: %d, allow: %d\n",
-            profile.key, profile.current_uid, profile.allow_su);
+        pr_info("load_allow_uid, name: %s, uid: %d, allow: %d\n", profile.key,
+                profile.current_uid, profile.allow_su);
         ksu_set_app_profile(&profile, false);
     }
 
@@ -451,7 +452,8 @@ exit:
     filp_close(fp, 0);
 }
 
-void ksu_prune_allowlist(bool (*is_uid_valid)(uid_t, char *, void *), void *data)
+void ksu_prune_allowlist(bool (*is_uid_valid)(uid_t, char *, void *),
+                         void *data)
 {
     struct perm_data *np = NULL;
     struct perm_data *n = NULL;
@@ -469,7 +471,8 @@ void ksu_prune_allowlist(bool (*is_uid_valid)(uid_t, char *, void *), void *data
             pr_info("prune uid: %d, package: %s\n", uid, package);
             list_del(&np->list);
             if (likely(uid <= BITMAP_UID_MAX)) {
-                allow_list_bitmap[uid / BITS_PER_BYTE] &= ~(1 << (uid % BITS_PER_BYTE));
+                allow_list_bitmap[uid / BITS_PER_BYTE] &=
+                    ~(1 << (uid % BITS_PER_BYTE));
             }
             remove_uid_from_arr(uid);
             smp_mb();

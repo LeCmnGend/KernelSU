@@ -39,7 +39,7 @@ static int uid_from_um_list(struct list_head *uid_list)
     ssize_t nr;
     int cnt = 0;
 
-    fp = ksu_filp_open_compat(KSU_UID_LIST_PATH, O_RDONLY, 0);
+    fp = filp_open(KSU_UID_LIST_PATH, O_RDONLY, 0);
     if (IS_ERR(fp))
         return -ENOENT;
 
@@ -56,7 +56,7 @@ static int uid_from_um_list(struct list_head *uid_list)
         return -ENOMEM;
     }
 
-    nr = ksu_kernel_read_compat(fp, buf, size, &pos);
+    nr = kernel_read(fp, buf, size, &pos);
     filp_close(fp, NULL);
     if (nr != size) {
         pr_err("uid_list: short read %zd/%lld\n", nr, size);
@@ -154,7 +154,7 @@ static void crown_manager(const char *apk, struct list_head *uid_data, int signa
     // pkg is `/<real package>`
     if (strncmp(pkg, KSU_MANAGER_PACKAGE, sizeof(KSU_MANAGER_PACKAGE))) {
         pr_info("manager package is inconsistent with kernel build: %s\n",
-            KSU_MANAGER_PACKAGE);
+                KSU_MANAGER_PACKAGE);
         return;
     }
 #endif
@@ -236,8 +236,8 @@ struct my_dir_context {
 #endif
 
 FILLDIR_RETURN_TYPE my_actor(struct dir_context *ctx, const char *name,
-                 int namelen, loff_t off, u64 ino,
-                 unsigned int d_type)
+                             int namelen, loff_t off, u64 ino,
+                             unsigned int d_type)
 {
     struct my_dir_context *my_ctx =
         container_of(ctx, struct my_dir_context, ctx);
@@ -317,7 +317,7 @@ FILLDIR_RETURN_TYPE my_actor(struct dir_context *ctx, const char *name,
                 *my_ctx->stop = 1;
 
                 // Manager found, clear APK cache list
-                list_for_each_entry_safe(pos, n, &apk_path_hash_list, list) {
+                list_for_each_entry_safe (pos, n, &apk_path_hash_list, list) {
                     list_del(&pos->list);
                     kfree(pos);
                 }
@@ -344,7 +344,7 @@ void search_manager(const char *path, int depth, struct list_head *uid_data)
     
     // Initialize APK cache list
     struct apk_path_hash *pos, *n;
-    list_for_each_entry(pos, &apk_path_hash_list, list) {
+    list_for_each_entry (pos, &apk_path_hash_list, list) {
         pos->exists = false;
     }
 
@@ -357,36 +357,39 @@ void search_manager(const char *path, int depth, struct list_head *uid_data)
     for (i = depth; i >= 0; i--) {
         struct data_path *pos, *n;
 
-        list_for_each_entry_safe(pos, n, &data_path_list, list) {
+        list_for_each_entry_safe (pos, n, &data_path_list, list) {
             struct my_dir_context ctx = { .ctx.actor = my_actor,
-                              .data_path_list = &data_path_list,
-                              .parent_dir = pos->dirpath,
-                              .private_data = uid_data,
-                              .depth = pos->depth,
-                              .stop = &stop };
+                                          .data_path_list = &data_path_list,
+                                          .parent_dir = pos->dirpath,
+                                          .private_data = uid_data,
+                                          .depth = pos->depth,
+                                          .stop = &stop };
             struct file *file;
 
             if (!stop) {
-                file = ksu_filp_open_compat(pos->dirpath, O_RDONLY | O_NOFOLLOW, 0);
+                file = filp_open(pos->dirpath, O_RDONLY | O_NOFOLLOW, 0);
                 if (IS_ERR(file)) {
-                    pr_err("Failed to open directory: %s, err: %ld\n", pos->dirpath, PTR_ERR(file));
+                    pr_err("Failed to open directory: %s, err: %ld\n",
+                           pos->dirpath, PTR_ERR(file));
                     goto skip_iterate;
                 }
-                
+
                 // grab magic on first folder, which is /data/app
                 if (!data_app_magic) {
                     if (file->f_inode->i_sb->s_magic) {
                         data_app_magic = file->f_inode->i_sb->s_magic;
-                        pr_info("%s: dir: %s got magic! 0x%lx\n", __func__, pos->dirpath, data_app_magic);
+                        pr_info("%s: dir: %s got magic! 0x%lx\n", __func__,
+                                pos->dirpath, data_app_magic);
                     } else {
                         filp_close(file, NULL);
                         goto skip_iterate;
                     }
                 }
-                
+
                 if (file->f_inode->i_sb->s_magic != data_app_magic) {
-                    pr_info("%s: skip: %s magic: 0x%lx expected: 0x%lx\n", __func__, pos->dirpath, 
-                        file->f_inode->i_sb->s_magic, data_app_magic);
+                    pr_info("%s: skip: %s magic: 0x%lx expected: 0x%lx\n",
+                            __func__, pos->dirpath,
+                            file->f_inode->i_sb->s_magic, data_app_magic);
                     filp_close(file, NULL);
                     goto skip_iterate;
                 }
@@ -394,7 +397,7 @@ void search_manager(const char *path, int depth, struct list_head *uid_data)
                 iterate_dir(file, &ctx.ctx);
                 filp_close(file, NULL);
             }
-skip_iterate:
+        skip_iterate:
             list_del(&pos->list);
             if (pos != &data)
                 kfree(pos);
@@ -402,7 +405,7 @@ skip_iterate:
     }
 
     // Remove stale cached APK entries
-    list_for_each_entry_safe(pos, n, &apk_path_hash_list, list) {
+    list_for_each_entry_safe (pos, n, &apk_path_hash_list, list) {
         if (!pos->exists) {
             list_del(&pos->list);
             kfree(pos);
@@ -430,7 +433,7 @@ void track_throne(void)
 {
     struct list_head uid_list;
     struct uid_data *np, *n;
-     struct file *fp;
+    struct file *fp;
     char chr = 0;
     loff_t pos = 0;
     loff_t line_start = 0;
@@ -455,7 +458,7 @@ void track_throne(void)
     }
 
     {
-        fp = ksu_filp_open_compat(SYSTEM_PACKAGES_LIST_PATH, O_RDONLY, 0);
+        fp = filp_open(SYSTEM_PACKAGES_LIST_PATH, O_RDONLY, 0);
         if (IS_ERR(fp)) {
             pr_err("%s: open " SYSTEM_PACKAGES_LIST_PATH " failed: %ld\n", __func__, PTR_ERR(fp));
             return;
@@ -463,13 +466,13 @@ void track_throne(void)
 
         for (;;) {
             ssize_t count =
-                ksu_kernel_read_compat(fp, &chr, sizeof(chr), &pos);
+                kernel_read(fp, &chr, sizeof(chr), &pos);
             if (count != sizeof(chr))
                 break;
             if (chr != '\n')
                 continue;
 
-            count = ksu_kernel_read_compat(fp, buf, sizeof(buf),
+            count = kernel_read(fp, buf, sizeof(buf),
                             &line_start);
             struct uid_data *data =
                 kzalloc(sizeof(struct uid_data), GFP_ATOMIC);
