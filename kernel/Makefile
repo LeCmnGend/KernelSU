@@ -11,7 +11,7 @@ kernelsu-objs += ksud.o
 kernelsu-objs += embed_ksud.o
 kernelsu-objs += kernel_compat.o
 kernelsu-objs += throne_tracker.o
-kernelsu-objs += file_wrapper.o
+kernelsu-objs += file_proxy.o
 kernelsu-objs += throne_comm.o
 kernelsu-objs += sulog.o
 
