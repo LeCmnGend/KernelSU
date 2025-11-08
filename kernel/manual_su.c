@@ -7,7 +7,6 @@
 #include <linux/file.h>
 #include <linux/mm.h>
 #include <linux/binfmts.h>
-#include "kernel_compat.h"
 #include "manual_su.h"
 #include "ksu.h"
 #include "allowlist.h"

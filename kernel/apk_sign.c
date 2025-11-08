@@ -17,7 +17,6 @@
 #include "apk_sign.h"
 #include "dynamic_manager.h"
 #include "klog.h" // IWYU pragma: keep
-#include "kernel_compat.h"
 #include "manager_sign.h"
 
 struct sdesc {

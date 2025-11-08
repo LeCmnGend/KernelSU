@@ -17,7 +17,6 @@
 
 #include "dynamic_manager.h"
 #include "klog.h" // IWYU pragma: keep
-#include "kernel_compat.h"
 #include "manager.h"
 
 #define MAX_MANAGERS 2

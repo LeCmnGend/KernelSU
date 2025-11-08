@@ -8,7 +8,7 @@
 
 #include "klog.h"
 #include "throne_comm.h"
-#include "kernel_compat.h"
+#include "ksu.h"
 
 #define PROC_UID_SCANNER "ksu_uid_scanner"
 #define UID_SCANNER_STATE_FILE "/data/adb/ksu/.uid_scanner"

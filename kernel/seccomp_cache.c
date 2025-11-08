@@ -10,7 +10,7 @@
 #endif
 #include <linux/uaccess.h>
 #include "klog.h" // IWYU pragma: keep
-#include "kernel_compat.h" // Add check Huawei Device
+#include "seccomp_cache.h"
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) ||    \
     defined(CONFIG_IS_HW_HISI) ||    \

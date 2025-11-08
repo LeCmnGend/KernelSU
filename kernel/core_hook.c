@@ -59,10 +59,13 @@
 #include "ksud.h"
 #include "manager.h"
 #include "selinux/selinux.h"
-#include "kernel_compat.h"
 #include "supercalls.h"
 #include "sucompat.h"
 #include "sulog.h"
+#include "seccomp_cache.h"
+
+#include "throne_comm.h"
+//#include "umount_manager.h"
 
 
 #ifdef CONFIG_KSU_SUSFS

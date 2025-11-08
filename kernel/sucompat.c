@@ -31,7 +31,6 @@
 #include "feature.h"
 #include "klog.h" // IWYU pragma: keep
 #include "ksud.h"
-#include "kernel_compat.h"
 #include "sucompat.h"
 #include "core_hook.h"
 #include "sulog.h"
@@ -337,22 +336,15 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
     if (unlikely(!filename_user))
         return 0;
 
-    /*
-     * nofault variant fails silently due to pagefault_disable
-     * some cpus dont really have that good speculative execution
-     * access_ok to substitute set_fs, we check if pointer is accessible
-     */
-    if (!ksu_access_ok(*filename_user, sizeof(path)))
-        return 0;
-
     // success = returns number of bytes and should be less than path
     long len = strncpy_from_user(path, *filename_user, sizeof(path));
     if (len <= 0 || len > sizeof(path))
         return 0;
-    // strncpy_from_user_nofault does this too
-    path[sizeof(path) - 1] = '\0';
 
     if (likely(memcmp(path, su, sizeof(su))))
+        return 0;
+
+    if (!ksu_is_allow_uid_for_current(current_uid().val))
         return 0;
 
 #if __SULOG_GATE

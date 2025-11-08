@@ -15,7 +15,6 @@
 #include <linux/crc32.h>
 
 #include "klog.h"
-#include "kernel_compat.h"
 #include "sulog.h"
 #include "ksu.h"
 

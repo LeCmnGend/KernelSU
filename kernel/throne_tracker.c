@@ -13,7 +13,7 @@
 #include "ksu.h"
 #include "manager.h"
 #include "throne_tracker.h"
-#include "kernel_compat.h"
+#include "apk_sign.h"
 #include "dynamic_manager.h"
 #include "throne_comm.h"
 
