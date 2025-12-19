@@ -37,25 +37,72 @@ val androidTargetCompatibility = JavaVersion.VERSION_21
 val managerVersionCode by extra(getVersionCode())
 val managerVersionName by extra(getVersionName())
 
-fun getGitCommitCount(): Int {
-    val process = Runtime.getRuntime().exec(arrayOf("git", "rev-list", "--count", "HEAD"))
-    return process.inputStream.bufferedReader().use { it.readText().trim().toInt() }
+// Helper for shell cmds.
+fun runCommand(vararg command: String): String =
+    ProcessBuilder(*command)
+        .redirectErrorStream(true)
+        .start()
+        .inputStream.bufferedReader()
+        .use { it.readText().trim() }
+
+// Get cur. branch; strip '-susfs'
+fun getCurrentBranch(): String {
+    val branchRaw = runCommand("git", "rev-parse", "--abbrev-ref", "HEAD")
+    return if (branchRaw.isEmpty() || branchRaw == "HEAD") "dev" else branchRaw.replace("-susfs", "")
 }
 
-fun getGitDescribe(): String {
-    val process = Runtime.getRuntime().exec(arrayOf("git", "describe", "--tags", "--always"))
-    return process.inputStream.bufferedReader().use { it.readText().trim() }
+// Get upstream: commit count, hash, describe number
+fun getUpstreamDescribe(): Triple<Int, String, Int> {
+    val branch = getCurrentBranch()
+    val remoteRef = "refs/remotes/origin/$branch"
+
+    // Find common ancestor to omit local repo's changes and handle "behind" state
+    var baseCommit = runCommand("git", "merge-base", "HEAD", remoteRef)
+    if (baseCommit.isEmpty()) {
+        baseCommit = "HEAD"
+    }
+
+    val describe = runCommand("git", "describe", "--tags", "--long", "--abbrev=8", baseCommit)
+    val parts = describe.split("-")
+
+    // Fallback if no tags
+    if (parts.size < 3) {
+        val commitCount = runCommand("git", "rev-list", "--count", baseCommit).let { if (it.isEmpty()) 0 else it.toInt() }
+        val hash = runCommand("git", "rev-parse", "--short=8", baseCommit)
+        return Triple(commitCount, hash, 0)
+    }
+
+    val num = parts[parts.size - 2].toInt()
+    val hash = parts.last().removePrefix("g")
+
+    val commitCount = runCommand("git", "rev-list", "--count", baseCommit).let { if (it.isEmpty()) 0 else it.toInt() }
+
+    return Triple(commitCount, hash, num)
 }
 
+// Version code calc.
 fun getVersionCode(): Int {
-    val commitCount = getGitCommitCount()
+    val (commitCount, _, _) = getUpstreamDescribe()
     val major = 1
     return major * 30000 + commitCount
 }
 
+// Version name (upstream tag, describe number, hash)
 fun getVersionName(): String {
-    return getGitDescribe()
+    val (commitCount, hash, num) = getUpstreamDescribe()
+    val branch = getCurrentBranch()
+    val remoteRef = "refs/remotes/origin/$branch"
+    var baseCommit = runCommand("git", "merge-base", "HEAD", remoteRef)
+    if (baseCommit.isEmpty()) {
+        baseCommit = "HEAD"
+    }
+    val tag = runCommand("git", "describe", "--tags", "--abbrev=0", baseCommit).let { if (it.isEmpty()) "v0.0.0" else it }
+    return "$tag-$num-g$hash"
 }
+
+// Root project version info. assignment (extras)
+rootProject.extra.set("managerVersionCode", getVersionCode())
+rootProject.extra.set("managerVersionName", getVersionName())
 
 subprojects {
     plugins.withType(AndroidBasePlugin::class.java) {
