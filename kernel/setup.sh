@@ -2,8 +2,8 @@
 set -eu
 
 GKI_ROOT=$(pwd)
-OWNER="KernelSU-Next"
-REPO="$OWNER"
+OWNER="LeCmnGend"
+REPO="KernelSU"
 
 display_usage() {
     echo "Usage: $0 [--cleanup | <commit-or-tag>]"
@@ -45,7 +45,7 @@ setup_kernelsu() {
     cd "$GKI_ROOT/$REPO"
     git stash && echo "[-] Stashed current changes."
 
-    BRANCH="$(git rev-parse --abbrev-ref origin/HEAD | sed 's@^origin/@@')"
+    BRANCH="next"
     if [ "$(git status | grep -Po 'v\d+(\.\d+)*' | head -n1)" ]; then
         git checkout $BRANCH && echo "[-] Switched to $BRANCH branch."
     fi
