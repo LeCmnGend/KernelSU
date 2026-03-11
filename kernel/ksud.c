@@ -22,6 +22,7 @@
 #include "allowlist.h"
 #include "arch.h"
 #include "klog.h" // IWYU pragma: keep
+#include "ksu.h"
 #include "ksud.h"
 #include "util.h"
 #include "selinux/selinux.h"
@@ -461,8 +462,12 @@ bool ksu_is_safe_mode()
 		return true;
 	}
 
-	// stop hook first!
-	stop_input_hook();
+    if (ksu_late_loaded) {
+        return false;
+    }
+
+    // stop hook first!
+    stop_input_hook();
 
 	pr_info("volumedown_pressed_count: %d\n", volumedown_pressed_count);
 	if (is_volumedown_enough(volumedown_pressed_count)) {
