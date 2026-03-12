@@ -38,13 +38,13 @@ struct ksu_report_event_cmd {
 };
 
 struct ksu_set_sepolicy_cmd {
-    __u64 data_len; // Input: bytes of serialized command payload
-    __aligned_u64 data; // Input: pointer to serialized payload
+	__u64 data_len; // Input: bytes of serialized command payload
+	__aligned_u64 data; // Input: pointer to serialized payload
 };
 
 struct ksu_sepolicy_cmd_hdr {
-    __u32 cmd; // Input: command type, CMD_*
-    __u32 subcmd; // Input: command subtype
+	__u32 cmd; // Input: command type, CMD_*
+	__u32 subcmd; // Input: command subtype
 };
 // After each ksu_sepolicy_cmd_hdr, command arguments are encoded sequentially as:
 // [u32 len][len bytes][\0], where len excludes the trailing '\0'.
