@@ -30,21 +30,6 @@
 extern u32 susfs_zygote_sid;
 extern struct cred *ksu_cred;
 
-#ifdef CONFIG_KSU_SUSFS_SUS_PATH
-extern void susfs_run_sus_path_loop(void);
-#endif // #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-
-static void ksu_handle_extra_susfs_work(void)
-{
-    const struct cred *saved = override_creds(ksu_cred);
-
-#ifdef CONFIG_KSU_SUSFS_SUS_PATH
-    susfs_run_sus_path_loop();
-#endif // #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-
-    revert_creds(saved);
-}
-
 int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 {
     // we rely on the fact that zygote always call setresuid(3) with same uids
@@ -94,9 +79,6 @@ int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 do_umount:
     // Handle kernel umount
     ksu_handle_umount(old_uid, new_uid);
-
-    // Handle extra susfs work
-    ksu_handle_extra_susfs_work();
 
     // Mark current proc as umounted
     susfs_set_current_proc_umounted();

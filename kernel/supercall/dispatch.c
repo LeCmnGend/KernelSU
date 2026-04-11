@@ -9,6 +9,7 @@
 #ifdef CONFIG_KSU_SUSFS
 #include <linux/namei.h>
 #include <linux/susfs.h>
+extern void susfs_run_sus_path_loop(void);
 #endif
 
 #include "uapi/supercall.h"
@@ -104,6 +105,12 @@ static int do_report_event(void __user *arg)
                 on_boot_completed();
             }
 #ifdef CONFIG_KSU_SUSFS
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+            extern struct cred *ksu_cred;
+            const struct cred *saved = override_creds(ksu_cred);
+            susfs_run_sus_path_loop();
+            revert_creds(saved);
+#endif
             susfs_start_sdcard_monitor_fn();
 #endif
         }
@@ -112,6 +119,12 @@ static int do_report_event(void __user *arg)
     case EVENT_MODULE_MOUNTED: {
         pr_info("module mounted!\n");
         on_module_mounted();
+#if defined(CONFIG_KSU_SUSFS) && defined(CONFIG_KSU_SUSFS_SUS_PATH)
+        extern struct cred *ksu_cred;
+        const struct cred *saved = override_creds(ksu_cred);
+        susfs_run_sus_path_loop();
+        revert_creds(saved);
+#endif
         break;
     }
     default:
