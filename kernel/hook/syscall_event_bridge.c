@@ -111,6 +111,10 @@ long __nocfi ksu_hook_setresuid(int orig_nr, const struct pt_regs *regs)
     if (ret < 0)
         return ret;
 
+#ifdef CONFIG_KSU_SUSFS
+    ksu_handle_setresuid(current_uid().val, current_uid().val, current_uid().val);
+#else
     ksu_handle_setresuid(old_uid, current_uid().val);
+#endif
     return ret;
 }

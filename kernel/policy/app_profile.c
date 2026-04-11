@@ -9,6 +9,10 @@
 #include <linux/uidgid.h>
 #include <linux/version.h>
 
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs_def.h>
+#endif
+
 #include "policy/allowlist.h"
 #include "policy/app_profile.h"
 #include "klog.h" // IWYU pragma: keep
@@ -118,7 +122,11 @@ int escape_with_root_profile(void)
         return -ENOMEM;
     }
 
+#ifdef CONFIG_KSU_SUSFS
+    if (susfs_is_current_ksu_domain()) {
+#else
     if (cred->euid.val == 0) {
+#endif
         pr_warn("Already root, don't escape!\n");
         goto out_abort_creds;
     }
@@ -185,9 +193,11 @@ int escape_with_root_profile(void)
 
     disable_seccomp();
 
+#ifndef CONFIG_KSU_SUSFS
     for_each_thread (p, t) {
         ksu_set_task_tracepoint_flag(t);
     }
+#endif
 
     setup_mount_ns(profile.namespaces);
     return 0;
@@ -197,14 +207,16 @@ out_abort_creds:
     return ret;
 }
 
-void escape_to_root_for_init(void)
+int escape_to_root_for_init(void)
 {
     struct cred *cred = prepare_creds();
     if (!cred) {
         pr_err("Failed to prepare init's creds!\n");
-        return;
+        return -EINVAL;
     }
 
     setup_selinux(KERNEL_SU_CONTEXT, cred);
     commit_creds(cred);
+
+    return 0;
 }

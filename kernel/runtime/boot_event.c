@@ -13,6 +13,10 @@
 bool ksu_module_mounted __read_mostly = false;
 bool ksu_boot_completed __read_mostly = false;
 
+#ifdef CONFIG_KSU_SUSFS
+extern bool ksu_input_hook __read_mostly;
+#endif
+
 extern void ksu_avc_spoof_late_init(void);
 
 void on_post_fs_data(void)
@@ -30,9 +34,14 @@ void on_post_fs_data(void)
     ksu_load_allow_list();
     ksu_observer_init();
     // Sanity check for safe mode only needs early-boot input samples.
+#ifdef CONFIG_KSU_SUSFS
+    ksu_input_hook = false;
+#else
     ksu_stop_input_hook_runtime();
+#endif
 }
 
+#ifdef CONFIG_EXT4_FS
 extern void ext4_unregister_sysfs(struct super_block *sb);
 
 int nuke_ext4_sysfs(const char *mnt)
@@ -55,6 +64,12 @@ int nuke_ext4_sysfs(const char *mnt)
     path_put(&path);
     return 0;
 }
+#else
+int nuke_ext4_sysfs(const char *mnt)
+{
+    return -EOPNOTSUPP;
+}
+#endif
 
 void on_module_mounted(void)
 {

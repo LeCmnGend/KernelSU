@@ -21,6 +21,12 @@
 #include "selinux/selinux.h"
 #include "hook/syscall_hook.h"
 
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs.h>
+#include "hook/setuid_hook.h"
+#include "feature/sucompat.h"
+#endif
+
 #if defined(__x86_64__)
 #include <asm/cpufeature.h>
 #include <linux/version.h>
@@ -108,11 +114,19 @@ int __init kernelsu_init(void)
         pr_err("prepare cred failed!\n");
     }
 
+#if !defined(CONFIG_KSU_SUSFS) && defined(CONFIG_KPROBES)
 	ksu_syscall_hook_init();
+#endif
 
 	ksu_feature_init();
 
 	ksu_supercalls_init();
+
+#ifdef CONFIG_KSU_SUSFS
+	ksu_sucompat_init();
+	ksu_setuid_hook_init();
+	ksu_avc_spoof_init();
+#endif
 
 	if (ksu_late_loaded) {
 		pr_info("late load mode, skipping kprobe hooks\n");
@@ -129,7 +143,9 @@ int __init kernelsu_init(void)
 		ksu_allowlist_init();
 		ksu_load_allow_list();
 
+#if !defined(CONFIG_KSU_SUSFS) && defined(CONFIG_KPROBES)
 		ksu_syscall_hook_manager_init();
+#endif
 
 		ksu_throne_tracker_init();
 		ksu_observer_init();
@@ -144,7 +160,9 @@ int __init kernelsu_init(void)
 		}
 
 	} else {
+#if !defined(CONFIG_KSU_SUSFS) && defined(CONFIG_KPROBES)
 		ksu_syscall_hook_manager_init();
+#endif
 
 		ksu_allowlist_init();
 
@@ -154,6 +172,10 @@ int __init kernelsu_init(void)
 
 		ksu_file_wrapper_init();
 	}
+
+#ifdef CONFIG_KSU_SUSFS
+	susfs_init();
+#endif
 
 #ifdef MODULE
 #ifndef CONFIG_KSU_DEBUG
@@ -166,7 +188,9 @@ int __init kernelsu_init(void)
 void __exit kernelsu_exit(void)
 {
 	// Phase 1: Stop all hooks first to prevent new callbacks
+#if !defined(CONFIG_KSU_SUSFS) && defined(CONFIG_KPROBES)
 	ksu_syscall_hook_manager_exit();
+#endif
 
 	ksu_supercalls_exit();
 
@@ -182,6 +206,12 @@ void __exit kernelsu_exit(void)
 	ksu_throne_tracker_exit();
 
 	ksu_allowlist_exit();
+
+#ifdef CONFIG_KSU_SUSFS
+	ksu_avc_spoof_exit();
+	ksu_sucompat_exit();
+	ksu_setuid_hook_exit();
+#endif
 
 	ksu_feature_exit();
 
