@@ -174,14 +174,6 @@ int ksu_handle_toolkit_reboot(int magic2, unsigned int cmd, void __user *arg)
             return -EFAULT;
         version_buf[sizeof(version_buf) - 1] = '\0';
 
-#if defined(CONFIG_KSU_SUSFS) && defined(CONFIG_KSU_SUSFS_SPOOF_UNAME)
-        extern bool is_susfs_uname_set;
-        if (is_susfs_uname_set && (strcmp(release_buf, "default") || strcmp(version_buf, "default"))) {
-            pr_info("susfs: SuSFS uname active, blocking toolkit apply\n");
-            return -EBUSY;
-        }
-#endif
-
         if (toolkit_orig_release[0] == '\0') {
             struct new_utsname *u_curr = utsname();
             // we save current version as the original before modifying
